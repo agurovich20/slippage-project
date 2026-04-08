@@ -1,5 +1,5 @@
 """
-Summary visualizations for the trexquant market impact project.
+Summary visualizations for the market impact project.
 
 Produces three figures:
   1. model_comparison.png — OOS metrics for all 6 point-prediction models (AAPL + COIN)
