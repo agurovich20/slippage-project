@@ -1,0 +1,650 @@
+18:24:51  INFO      SKIP  AAPL 2024-06-03 (already exists)
+18:24:51  INFO      FETCH AAPL 2024-06-04  [2/325]
+18:25:14  INFO        -> 575,332 trades in 23.2s  (data\AAPL\2024-06-04.parquet)
+18:25:14  INFO      FETCH AAPL 2024-06-05  [3/325]
+18:25:38  INFO        -> 648,301 trades in 24.2s  (data\AAPL\2024-06-05.parquet)
+18:25:39  INFO      FETCH AAPL 2024-06-06  [4/325]
+18:26:03  INFO        -> 550,137 trades in 23.9s  (data\AAPL\2024-06-06.parquet)
+18:26:03  INFO      FETCH AAPL 2024-06-07  [5/325]
+18:26:26  INFO        -> 505,982 trades in 22.9s  (data\AAPL\2024-06-07.parquet)
+18:26:26  INFO      FETCH AAPL 2024-06-10  [6/325]
+18:27:11  INFO        -> 1,115,310 trades in 45.6s  (data\AAPL\2024-06-10.parquet)
+18:27:12  INFO      FETCH AAPL 2024-06-11  [7/325]
+18:28:12  INFO        -> 1,601,806 trades in 60.3s  (data\AAPL\2024-06-11.parquet)
+18:28:12  INFO      FETCH AAPL 2024-06-12  [8/325]
+18:29:19  INFO        -> 1,861,031 trades in 66.8s  (data\AAPL\2024-06-12.parquet)
+18:29:19  INFO      FETCH AAPL 2024-06-13  [9/325]
+18:29:56  INFO        -> 1,032,990 trades in 36.9s  (data\AAPL\2024-06-13.parquet)
+18:29:56  INFO      FETCH AAPL 2024-06-14  [10/325]
+18:30:27  INFO        -> 793,771 trades in 31.1s  (data\AAPL\2024-06-14.parquet)
+18:30:28  INFO      FETCH AAPL 2024-06-17  [11/325]
+18:31:17  INFO        -> 1,034,983 trades in 49.4s  (data\AAPL\2024-06-17.parquet)
+18:31:17  INFO      FETCH AAPL 2024-06-18  [12/325]
+18:32:02  INFO        -> 919,980 trades in 44.5s  (data\AAPL\2024-06-18.parquet)
+18:32:02  INFO      FETCH AAPL 2024-06-19  [13/325]
+18:32:02  WARNING   AAPL 2024-06-19 – 0 trades (market closed or no data)
+18:32:02  INFO      FETCH AAPL 2024-06-20  [14/325]
+18:32:43  INFO        -> 1,005,380 trades in 40.8s  (data\AAPL\2024-06-20.parquet)
+18:32:43  INFO      FETCH AAPL 2024-06-21  [15/325]
+18:33:15  INFO        -> 881,958 trades in 31.3s  (data\AAPL\2024-06-21.parquet)
+18:33:15  INFO      FETCH AAPL 2024-06-24  [16/325]
+18:33:49  INFO        -> 916,165 trades in 34.4s  (data\AAPL\2024-06-24.parquet)
+18:33:49  INFO      FETCH AAPL 2024-06-25  [17/325]
+18:34:12  INFO        -> 621,215 trades in 22.7s  (data\AAPL\2024-06-25.parquet)
+18:34:12  INFO      FETCH AAPL 2024-06-26  [18/325]
+18:34:41  INFO        -> 769,115 trades in 28.5s  (data\AAPL\2024-06-26.parquet)
+18:34:41  INFO      FETCH AAPL 2024-06-27  [19/325]
+18:35:06  INFO        -> 644,407 trades in 25.3s  (data\AAPL\2024-06-27.parquet)
+18:35:06  INFO      FETCH AAPL 2024-06-28  [20/325]
+18:35:37  INFO        -> 729,941 trades in 30.5s  (data\AAPL\2024-06-28.parquet)
+18:35:37  INFO      FETCH AAPL 2024-07-01  [21/325]
+18:36:06  INFO        -> 784,861 trades in 28.5s  (data\AAPL\2024-07-01.parquet)
+18:36:06  INFO      FETCH AAPL 2024-07-02  [22/325]
+18:36:30  INFO        -> 690,012 trades in 24.6s  (data\AAPL\2024-07-02.parquet)
+18:36:31  INFO      FETCH AAPL 2024-07-03  [23/325]
+18:36:51  INFO        -> 566,797 trades in 19.9s  (data\AAPL\2024-07-03.parquet)
+18:36:51  INFO      FETCH AAPL 2024-07-04  [24/325]
+18:36:51  WARNING   AAPL 2024-07-04 – 0 trades (market closed or no data)
+18:36:51  INFO      FETCH AAPL 2024-07-05  [25/325]
+18:37:17  INFO        -> 767,439 trades in 26.4s  (data\AAPL\2024-07-05.parquet)
+18:37:18  INFO      FETCH AAPL 2024-07-08  [26/325]
+18:37:46  INFO        -> 790,110 trades in 28.4s  (data\AAPL\2024-07-08.parquet)
+18:37:46  INFO      FETCH AAPL 2024-07-09  [27/325]
+18:38:09  INFO        -> 651,081 trades in 23.2s  (data\AAPL\2024-07-09.parquet)
+18:38:10  INFO      FETCH AAPL 2024-07-10  [28/325]
+18:38:37  INFO        -> 782,538 trades in 27.2s  (data\AAPL\2024-07-10.parquet)
+18:38:37  INFO      FETCH AAPL 2024-07-11  [29/325]
+18:39:09  INFO        -> 889,324 trades in 31.5s  (data\AAPL\2024-07-11.parquet)
+18:39:09  INFO      FETCH AAPL 2024-07-12  [30/325]
+18:39:34  INFO        -> 706,297 trades in 25.4s  (data\AAPL\2024-07-12.parquet)
+18:39:34  INFO      FETCH AAPL 2024-07-15  [31/325]
+18:40:04  INFO        -> 822,709 trades in 30.0s  (data\AAPL\2024-07-15.parquet)
+18:40:05  INFO      FETCH AAPL 2024-07-16  [32/325]
+18:40:28  INFO        -> 623,978 trades in 23.4s  (data\AAPL\2024-07-16.parquet)
+18:40:28  INFO      FETCH AAPL 2024-07-17  [33/325]
+18:40:57  INFO        -> 811,162 trades in 28.7s  (data\AAPL\2024-07-17.parquet)
+18:40:57  INFO      FETCH AAPL 2024-07-18  [34/325]
+18:41:27  INFO        -> 844,641 trades in 30.1s  (data\AAPL\2024-07-18.parquet)
+18:41:27  INFO      FETCH AAPL 2024-07-19  [35/325]
+18:41:49  INFO        -> 612,846 trades in 21.7s  (data\AAPL\2024-07-19.parquet)
+18:41:49  INFO      FETCH AAPL 2024-07-22  [36/325]
+18:42:14  INFO        -> 704,919 trades in 24.9s  (data\AAPL\2024-07-22.parquet)
+18:42:14  INFO      FETCH AAPL 2024-07-23  [37/325]
+18:42:35  INFO        -> 551,704 trades in 20.1s  (data\AAPL\2024-07-23.parquet)
+18:42:35  INFO      FETCH AAPL 2024-07-24  [38/325]
+18:43:04  INFO        -> 816,158 trades in 29.3s  (data\AAPL\2024-07-24.parquet)
+18:43:04  INFO      FETCH AAPL 2024-07-25  [39/325]
+18:43:32  INFO        -> 737,686 trades in 28.2s  (data\AAPL\2024-07-25.parquet)
+18:43:33  INFO      FETCH AAPL 2024-07-26  [40/325]
+18:43:56  INFO        -> 608,606 trades in 22.9s  (data\AAPL\2024-07-26.parquet)
+18:43:56  INFO      FETCH AAPL 2024-07-29  [41/325]
+18:44:19  INFO        -> 604,736 trades in 23.4s  (data\AAPL\2024-07-29.parquet)
+18:44:19  INFO      FETCH AAPL 2024-07-30  [42/325]
+18:44:42  INFO        -> 584,368 trades in 22.8s  (data\AAPL\2024-07-30.parquet)
+18:44:42  INFO      FETCH AAPL 2024-07-31  [43/325]
+18:45:08  INFO        -> 668,911 trades in 25.5s  (data\AAPL\2024-07-31.parquet)
+18:45:08  INFO      FETCH AAPL 2024-08-01  [44/325]
+18:45:44  INFO        -> 876,143 trades in 36.0s  (data\AAPL\2024-08-01.parquet)
+18:45:44  INFO      FETCH AAPL 2024-08-02  [45/325]
+18:46:29  INFO        -> 1,132,575 trades in 44.9s  (data\AAPL\2024-08-02.parquet)
+18:46:29  INFO      FETCH AAPL 2024-08-05  [46/325]
+18:47:32  INFO        -> 1,661,968 trades in 63.1s  (data\AAPL\2024-08-05.parquet)
+18:47:33  INFO      FETCH AAPL 2024-08-06  [47/325]
+18:48:08  INFO        -> 921,964 trades in 35.9s  (data\AAPL\2024-08-06.parquet)
+18:48:09  INFO      FETCH AAPL 2024-08-07  [48/325]
+18:48:37  INFO        -> 741,739 trades in 28.3s  (data\AAPL\2024-08-07.parquet)
+18:48:37  INFO      FETCH AAPL 2024-08-08  [49/325]
+18:49:02  INFO        -> 628,793 trades in 24.8s  (data\AAPL\2024-08-08.parquet)
+18:49:02  INFO      FETCH AAPL 2024-08-09  [50/325]
+18:49:26  INFO        -> 589,481 trades in 23.6s  (data\AAPL\2024-08-09.parquet)
+18:49:26  INFO      FETCH AAPL 2024-08-12  [51/325]
+18:49:51  INFO        -> 602,546 trades in 25.0s  (data\AAPL\2024-08-12.parquet)
+18:49:51  INFO      FETCH AAPL 2024-08-13  [52/325]
+18:50:15  INFO        -> 553,280 trades in 23.4s  (data\AAPL\2024-08-13.parquet)
+18:50:15  INFO      FETCH AAPL 2024-08-14  [53/325]
+18:50:37  INFO        -> 568,532 trades in 22.3s  (data\AAPL\2024-08-14.parquet)
+18:50:37  INFO      FETCH AAPL 2024-08-15  [54/325]
+18:50:59  INFO        -> 590,592 trades in 21.5s  (data\AAPL\2024-08-15.parquet)
+18:50:59  INFO      FETCH AAPL 2024-08-16  [55/325]
+18:51:20  INFO        -> 562,659 trades in 20.8s  (data\AAPL\2024-08-16.parquet)
+18:51:20  INFO      FETCH AAPL 2024-08-19  [56/325]
+18:51:42  INFO        -> 606,373 trades in 21.8s  (data\AAPL\2024-08-19.parquet)
+18:51:42  INFO      FETCH AAPL 2024-08-20  [57/325]
+18:52:01  INFO        -> 498,815 trades in 18.8s  (data\AAPL\2024-08-20.parquet)
+18:52:01  INFO      FETCH AAPL 2024-08-21  [58/325]
+18:52:20  INFO        -> 506,672 trades in 18.6s  (data\AAPL\2024-08-21.parquet)
+18:52:20  INFO      FETCH AAPL 2024-08-22  [59/325]
+18:52:41  INFO        -> 586,209 trades in 21.7s  (data\AAPL\2024-08-22.parquet)
+18:52:42  INFO      FETCH AAPL 2024-08-23  [60/325]
+18:53:02  INFO        -> 555,167 trades in 20.7s  (data\AAPL\2024-08-23.parquet)
+18:53:03  INFO      FETCH AAPL 2024-08-26  [61/325]
+18:53:22  INFO        -> 565,421 trades in 19.9s  (data\AAPL\2024-08-26.parquet)
+18:53:23  INFO      FETCH AAPL 2024-08-27  [62/325]
+18:53:40  INFO        -> 491,862 trades in 17.6s  (data\AAPL\2024-08-27.parquet)
+18:53:40  INFO      FETCH AAPL 2024-08-28  [63/325]
+18:54:00  INFO        -> 563,179 trades in 19.5s  (data\AAPL\2024-08-28.parquet)
+18:54:00  INFO      FETCH AAPL 2024-08-29  [64/325]
+18:54:26  INFO        -> 723,157 trades in 25.4s  (data\AAPL\2024-08-29.parquet)
+18:54:26  INFO      FETCH AAPL 2024-08-30  [65/325]
+18:54:47  INFO        -> 594,175 trades in 20.9s  (data\AAPL\2024-08-30.parquet)
+18:54:47  INFO      FETCH MSFT 2024-06-03  [66/325]
+18:55:03  INFO        -> 447,171 trades in 16.0s  (data\MSFT\2024-06-03.parquet)
+18:55:03  INFO      FETCH MSFT 2024-06-04  [67/325]
+18:55:14  INFO        -> 316,587 trades in 11.2s  (data\MSFT\2024-06-04.parquet)
+18:55:14  INFO      FETCH MSFT 2024-06-05  [68/325]
+18:55:28  INFO        -> 362,686 trades in 13.6s  (data\MSFT\2024-06-05.parquet)
+18:55:28  INFO      FETCH MSFT 2024-06-06  [69/325]
+18:55:41  INFO        -> 339,061 trades in 13.2s  (data\MSFT\2024-06-06.parquet)
+18:55:42  INFO      FETCH MSFT 2024-06-07  [70/325]
+18:55:51  INFO        -> 242,556 trades in 9.2s  (data\MSFT\2024-06-07.parquet)
+18:55:51  INFO      FETCH MSFT 2024-06-10  [71/325]
+18:56:05  INFO        -> 366,225 trades in 14.1s  (data\MSFT\2024-06-10.parquet)
+18:56:05  INFO      FETCH MSFT 2024-06-11  [72/325]
+18:56:19  INFO        -> 351,912 trades in 13.3s  (data\MSFT\2024-06-11.parquet)
+18:56:19  INFO      FETCH MSFT 2024-06-12  [73/325]
+18:56:37  INFO        -> 493,593 trades in 18.6s  (data\MSFT\2024-06-12.parquet)
+18:56:38  INFO      FETCH MSFT 2024-06-13  [74/325]
+18:56:51  INFO        -> 358,469 trades in 13.4s  (data\MSFT\2024-06-13.parquet)
+18:56:51  INFO      FETCH MSFT 2024-06-14  [75/325]
+18:57:04  INFO        -> 324,905 trades in 12.3s  (data\MSFT\2024-06-14.parquet)
+18:57:04  INFO      FETCH MSFT 2024-06-17  [76/325]
+18:57:20  INFO        -> 438,287 trades in 16.4s  (data\MSFT\2024-06-17.parquet)
+18:57:20  INFO      FETCH MSFT 2024-06-18  [77/325]
+18:57:35  INFO        -> 381,024 trades in 14.3s  (data\MSFT\2024-06-18.parquet)
+18:57:35  INFO      FETCH MSFT 2024-06-19  [78/325]
+18:57:35  WARNING   MSFT 2024-06-19 – 0 trades (market closed or no data)
+18:57:35  INFO      FETCH MSFT 2024-06-20  [79/325]
+18:57:52  INFO        -> 444,444 trades in 16.6s  (data\MSFT\2024-06-20.parquet)
+18:57:52  INFO      FETCH MSFT 2024-06-21  [80/325]
+18:58:06  INFO        -> 384,971 trades in 14.4s  (data\MSFT\2024-06-21.parquet)
+18:58:07  INFO      FETCH MSFT 2024-06-24  [81/325]
+18:58:21  INFO        -> 391,492 trades in 14.6s  (data\MSFT\2024-06-24.parquet)
+18:58:21  INFO      FETCH MSFT 2024-06-25  [82/325]
+18:58:37  INFO        -> 312,633 trades in 15.7s  (data\MSFT\2024-06-25.parquet)
+18:58:37  INFO      FETCH MSFT 2024-06-26  [83/325]
+18:58:49  INFO        -> 327,620 trades in 11.5s  (data\MSFT\2024-06-26.parquet)
+18:58:49  INFO      FETCH MSFT 2024-06-27  [84/325]
+18:59:00  INFO        -> 327,955 trades in 11.6s  (data\MSFT\2024-06-27.parquet)
+18:59:01  INFO      FETCH MSFT 2024-06-28  [85/325]
+18:59:15  INFO        -> 399,869 trades in 14.0s  (data\MSFT\2024-06-28.parquet)
+18:59:15  INFO      FETCH MSFT 2024-07-01  [86/325]
+18:59:30  INFO        -> 414,476 trades in 14.8s  (data\MSFT\2024-07-01.parquet)
+18:59:30  INFO      FETCH MSFT 2024-07-02  [87/325]
+18:59:42  INFO        -> 352,748 trades in 12.4s  (data\MSFT\2024-07-02.parquet)
+18:59:42  INFO      FETCH MSFT 2024-07-03  [88/325]
+18:59:53  INFO        -> 297,134 trades in 10.3s  (data\MSFT\2024-07-03.parquet)
+18:59:53  INFO      FETCH MSFT 2024-07-04  [89/325]
+18:59:53  WARNING   MSFT 2024-07-04 – 0 trades (market closed or no data)
+18:59:53  INFO      FETCH MSFT 2024-07-05  [90/325]
+19:00:08  INFO        -> 410,934 trades in 14.7s  (data\MSFT\2024-07-05.parquet)
+19:00:08  INFO      FETCH MSFT 2024-07-08  [91/325]
+19:00:22  INFO        -> 394,969 trades in 14.2s  (data\MSFT\2024-07-08.parquet)
+19:00:23  INFO      FETCH MSFT 2024-07-09  [92/325]
+19:00:39  INFO        -> 457,072 trades in 16.4s  (data\MSFT\2024-07-09.parquet)
+19:00:39  INFO      FETCH MSFT 2024-07-10  [93/325]
+19:00:53  INFO        -> 399,333 trades in 13.9s  (data\MSFT\2024-07-10.parquet)
+19:00:53  INFO      FETCH MSFT 2024-07-11  [94/325]
+19:01:13  INFO        -> 567,268 trades in 20.0s  (data\MSFT\2024-07-11.parquet)
+19:01:13  INFO      FETCH MSFT 2024-07-12  [95/325]
+19:01:30  INFO        -> 438,231 trades in 16.2s  (data\MSFT\2024-07-12.parquet)
+19:01:30  INFO      FETCH MSFT 2024-07-15  [96/325]
+19:01:45  INFO        -> 410,321 trades in 14.8s  (data\MSFT\2024-07-15.parquet)
+19:01:45  INFO      FETCH MSFT 2024-07-16  [97/325]
+19:02:01  INFO        -> 462,058 trades in 16.3s  (data\MSFT\2024-07-16.parquet)
+19:02:01  INFO      FETCH MSFT 2024-07-17  [98/325]
+19:02:21  INFO        -> 541,931 trades in 19.4s  (data\MSFT\2024-07-17.parquet)
+19:02:21  INFO      FETCH MSFT 2024-07-18  [99/325]
+19:02:41  INFO        -> 512,542 trades in 19.8s  (data\MSFT\2024-07-18.parquet)
+19:02:41  INFO      FETCH MSFT 2024-07-19  [100/325]
+19:03:00  INFO        -> 483,514 trades in 18.6s  (data\MSFT\2024-07-19.parquet)
+19:03:00  INFO      FETCH MSFT 2024-07-22  [101/325]
+19:03:15  INFO        -> 405,685 trades in 15.6s  (data\MSFT\2024-07-22.parquet)
+19:03:16  INFO      FETCH MSFT 2024-07-23  [102/325]
+19:03:28  INFO        -> 316,416 trades in 12.1s  (data\MSFT\2024-07-23.parquet)
+19:03:28  INFO      FETCH MSFT 2024-07-24  [103/325]
+19:03:48  INFO        -> 550,705 trades in 20.4s  (data\MSFT\2024-07-24.parquet)
+19:03:49  INFO      FETCH MSFT 2024-07-25  [104/325]
+19:04:10  INFO        -> 618,117 trades in 21.6s  (data\MSFT\2024-07-25.parquet)
+19:04:10  INFO      FETCH MSFT 2024-07-26  [105/325]
+19:04:26  INFO        -> 437,376 trades in 16.1s  (data\MSFT\2024-07-26.parquet)
+19:04:27  INFO      FETCH MSFT 2024-07-29  [106/325]
+19:04:41  INFO        -> 372,645 trades in 13.9s  (data\MSFT\2024-07-29.parquet)
+19:04:41  INFO      FETCH MSFT 2024-07-30  [107/325]
+19:05:04  INFO        -> 673,266 trades in 23.6s  (data\MSFT\2024-07-30.parquet)
+19:05:05  INFO      FETCH MSFT 2024-07-31  [108/325]
+19:05:33  INFO        -> 812,258 trades in 28.5s  (data\MSFT\2024-07-31.parquet)
+19:05:33  INFO      FETCH MSFT 2024-08-01  [109/325]
+19:05:53  INFO        -> 570,659 trades in 20.1s  (data\MSFT\2024-08-01.parquet)
+19:05:54  INFO      FETCH MSFT 2024-08-02  [110/325]
+19:06:17  INFO        -> 640,120 trades in 23.7s  (data\MSFT\2024-08-02.parquet)
+19:06:18  INFO      FETCH MSFT 2024-08-05  [111/325]
+19:06:50  INFO        -> 911,527 trades in 32.1s  (data\MSFT\2024-08-05.parquet)
+19:06:50  INFO      FETCH MSFT 2024-08-06  [112/325]
+19:07:08  INFO        -> 523,905 trades in 18.4s  (data\MSFT\2024-08-06.parquet)
+19:07:08  INFO      FETCH MSFT 2024-08-07  [113/325]
+19:07:25  INFO        -> 434,292 trades in 16.2s  (data\MSFT\2024-08-07.parquet)
+19:07:25  INFO      FETCH MSFT 2024-08-08  [114/325]
+19:07:40  INFO        -> 388,863 trades in 14.7s  (data\MSFT\2024-08-08.parquet)
+19:07:40  INFO      FETCH MSFT 2024-08-09  [115/325]
+19:07:52  INFO        -> 330,014 trades in 12.0s  (data\MSFT\2024-08-09.parquet)
+19:07:52  INFO      FETCH MSFT 2024-08-12  [116/325]
+19:08:04  INFO        -> 338,073 trades in 12.1s  (data\MSFT\2024-08-12.parquet)
+19:08:04  INFO      FETCH MSFT 2024-08-13  [117/325]
+19:08:16  INFO        -> 338,610 trades in 12.1s  (data\MSFT\2024-08-13.parquet)
+19:08:17  INFO      FETCH MSFT 2024-08-14  [118/325]
+19:08:28  INFO        -> 318,445 trades in 11.4s  (data\MSFT\2024-08-14.parquet)
+19:08:28  INFO      FETCH MSFT 2024-08-15  [119/325]
+19:08:40  INFO        -> 345,867 trades in 12.2s  (data\MSFT\2024-08-15.parquet)
+19:08:41  INFO      FETCH MSFT 2024-08-16  [120/325]
+19:08:53  INFO        -> 326,163 trades in 12.0s  (data\MSFT\2024-08-16.parquet)
+19:08:53  INFO      FETCH MSFT 2024-08-19  [121/325]
+19:09:04  INFO        -> 325,678 trades in 11.5s  (data\MSFT\2024-08-19.parquet)
+19:09:05  INFO      FETCH MSFT 2024-08-20  [122/325]
+19:09:16  INFO        -> 311,642 trades in 11.2s  (data\MSFT\2024-08-20.parquet)
+19:09:16  INFO      FETCH MSFT 2024-08-21  [123/325]
+19:09:27  INFO        -> 299,671 trades in 10.6s  (data\MSFT\2024-08-21.parquet)
+19:09:27  INFO      FETCH MSFT 2024-08-22  [124/325]
+19:09:41  INFO        -> 385,390 trades in 13.8s  (data\MSFT\2024-08-22.parquet)
+19:09:41  INFO      FETCH MSFT 2024-08-23  [125/325]
+19:09:54  INFO        -> 366,485 trades in 13.3s  (data\MSFT\2024-08-23.parquet)
+19:09:54  INFO      FETCH MSFT 2024-08-26  [126/325]
+19:10:07  INFO        -> 330,253 trades in 12.5s  (data\MSFT\2024-08-26.parquet)
+19:10:07  INFO      FETCH MSFT 2024-08-27  [127/325]
+19:10:17  INFO        -> 286,636 trades in 10.3s  (data\MSFT\2024-08-27.parquet)
+19:10:18  INFO      FETCH MSFT 2024-08-28  [128/325]
+19:10:29  INFO        -> 329,380 trades in 11.7s  (data\MSFT\2024-08-28.parquet)
+19:10:29  INFO      FETCH MSFT 2024-08-29  [129/325]
+19:10:42  INFO        -> 355,301 trades in 12.9s  (data\MSFT\2024-08-29.parquet)
+19:10:43  INFO      FETCH MSFT 2024-08-30  [130/325]
+19:10:54  INFO        -> 314,941 trades in 11.2s  (data\MSFT\2024-08-30.parquet)
+19:10:54  INFO      FETCH NVDA 2024-06-03  [131/325]
+19:11:36  INFO        -> 1,187,635 trades in 42.5s  (data\NVDA\2024-06-03.parquet)
+19:11:37  INFO      FETCH NVDA 2024-06-04  [132/325]
+19:12:15  INFO        -> 1,056,079 trades in 38.1s  (data\NVDA\2024-06-04.parquet)
+19:12:15  INFO      FETCH NVDA 2024-06-05  [133/325]
+19:13:06  INFO        -> 1,410,136 trades in 50.8s  (data\NVDA\2024-06-05.parquet)
+19:13:06  INFO      FETCH NVDA 2024-06-06  [134/325]
+19:14:13  INFO        -> 1,912,107 trades in 67.2s  (data\NVDA\2024-06-06.parquet)
+19:14:13  INFO      FETCH NVDA 2024-06-07  [135/325]
+19:14:54  INFO        -> 1,119,538 trades in 40.8s  (data\NVDA\2024-06-07.parquet)
+19:14:55  INFO      FETCH NVDA 2024-06-10  [136/325]
+19:17:05  INFO        -> 2,800,667 trades in 130.1s  (data\NVDA\2024-06-10.parquet)
+19:17:05  INFO      FETCH NVDA 2024-06-11  [137/325]
+19:18:10  INFO        -> 1,805,440 trades in 65.4s  (data\NVDA\2024-06-11.parquet)
+19:18:10  INFO      FETCH NVDA 2024-06-12  [138/325]
+19:19:24  INFO        -> 2,024,584 trades in 73.9s  (data\NVDA\2024-06-12.parquet)
+19:19:25  INFO      FETCH NVDA 2024-06-13  [139/325]
+19:20:32  INFO        -> 1,895,090 trades in 67.3s  (data\NVDA\2024-06-13.parquet)
+19:20:32  INFO      FETCH NVDA 2024-06-14  [140/325]
+19:21:48  INFO        -> 2,139,364 trades in 75.5s  (data\NVDA\2024-06-14.parquet)
+19:21:48  INFO      FETCH NVDA 2024-06-17  [141/325]
+19:23:02  INFO        -> 2,129,645 trades in 74.5s  (data\NVDA\2024-06-17.parquet)
+19:23:02  INFO      FETCH NVDA 2024-06-18  [142/325]
+19:24:16  INFO        -> 2,094,357 trades in 73.1s  (data\NVDA\2024-06-18.parquet)
+19:24:16  INFO      FETCH NVDA 2024-06-19  [143/325]
+19:24:16  WARNING   NVDA 2024-06-19 – 0 trades (market closed or no data)
+19:24:16  INFO      FETCH NVDA 2024-06-20  [144/325]
+19:26:35  INFO        -> 4,054,241 trades in 138.7s  (data\NVDA\2024-06-20.parquet)
+19:26:35  INFO      FETCH NVDA 2024-06-21  [145/325]
+19:28:28  INFO        -> 3,275,142 trades in 113.4s  (data\NVDA\2024-06-21.parquet)
+19:28:29  INFO      FETCH NVDA 2024-06-24  [146/325]
+19:30:35  INFO        -> 3,695,220 trades in 126.5s  (data\NVDA\2024-06-24.parquet)
+19:30:35  INFO      FETCH NVDA 2024-06-25  [147/325]
+19:32:07  INFO        -> 2,612,538 trades in 91.7s  (data\NVDA\2024-06-25.parquet)
+19:32:07  INFO      FETCH NVDA 2024-06-26  [148/325]
+19:33:29  INFO        -> 2,344,770 trades in 81.4s  (data\NVDA\2024-06-26.parquet)
+19:33:29  INFO      FETCH NVDA 2024-06-27  [149/325]
+19:34:25  INFO        -> 1,568,683 trades in 56.7s  (data\NVDA\2024-06-27.parquet)
+19:34:26  INFO      FETCH NVDA 2024-06-28  [150/325]
+21:56:16  WARNING   Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'ConnectionResetError(10054, 'An existing connection was forcibly closed by the remote host', None, 10054, None)': /v3/trades/NVDA?cursor=YXA9MjI5NjYxMSZhcz1hdGxhcy1zdG9ja3MtdHJhZGVzJmxpbWl0PTUwMDAwJm9yZGVyPWFzYyZzb3J0PXBhcnRpY2lwYW50X3RpbWVzdGFtcCZ0aW1lc3RhbXAuZ3RlPTIwMjQtMDYtMjhUMTQlM0E0MSUzQTU2LjA0NjU1MzQzOVomdGltZXN0YW1wLmx0ZT0yMDI0LTA2LTI4VDIzJTNBNTklM0E1OS45OTk5OTk5OTla
+21:57:09  INFO        -> 1,766,952 trades in 8563.5s  (data\NVDA\2024-06-28.parquet)
+21:57:09  INFO      FETCH NVDA 2024-07-01  [151/325]
+21:58:47  INFO        -> 1,916,800 trades in 97.8s  (data\NVDA\2024-07-01.parquet)
+21:58:47  INFO      FETCH NVDA 2024-07-02  [152/325]
+21:59:57  INFO        -> 1,485,601 trades in 69.6s  (data\NVDA\2024-07-02.parquet)
+21:59:57  INFO      FETCH NVDA 2024-07-03  [153/325]
+22:01:12  INFO        -> 1,539,337 trades in 74.6s  (data\NVDA\2024-07-03.parquet)
+22:01:12  INFO      FETCH NVDA 2024-07-04  [154/325]
+22:01:12  WARNING   NVDA 2024-07-04 – 0 trades (market closed or no data)
+22:01:12  INFO      FETCH NVDA 2024-07-05  [155/325]
+22:02:28  INFO        -> 1,599,118 trades in 76.0s  (data\NVDA\2024-07-05.parquet)
+22:02:29  INFO      FETCH NVDA 2024-07-08  [156/325]
+22:03:35  INFO        -> 1,728,001 trades in 66.0s  (data\NVDA\2024-07-08.parquet)
+22:03:35  INFO      FETCH NVDA 2024-07-09  [157/325]
+22:04:56  INFO        -> 1,935,914 trades in 81.3s  (data\NVDA\2024-07-09.parquet)
+22:04:56  INFO      FETCH NVDA 2024-07-10  [158/325]
+22:06:20  INFO        -> 1,721,426 trades in 83.9s  (data\NVDA\2024-07-10.parquet)
+22:06:20  INFO      FETCH NVDA 2024-07-11  [159/325]
+22:08:48  INFO        -> 3,011,948 trades in 147.6s  (data\NVDA\2024-07-11.parquet)
+22:08:48  INFO      FETCH NVDA 2024-07-12  [160/325]
+22:10:15  INFO        -> 1,739,290 trades in 87.2s  (data\NVDA\2024-07-12.parquet)
+22:10:16  INFO      FETCH NVDA 2024-07-15  [161/325]
+22:11:36  INFO        -> 1,685,055 trades in 80.5s  (data\NVDA\2024-07-15.parquet)
+22:11:36  INFO      FETCH NVDA 2024-07-16  [162/325]
+22:12:57  INFO        -> 1,644,408 trades in 80.5s  (data\NVDA\2024-07-16.parquet)
+22:12:57  INFO      FETCH NVDA 2024-07-17  [163/325]
+22:15:37  INFO        -> 3,385,816 trades in 160.1s  (data\NVDA\2024-07-17.parquet)
+22:15:37  INFO      FETCH NVDA 2024-07-18  [164/325]
+22:17:32  INFO        -> 2,406,101 trades in 114.9s  (data\NVDA\2024-07-18.parquet)
+22:17:32  INFO      FETCH NVDA 2024-07-19  [165/325]
+22:18:52  INFO        -> 1,613,520 trades in 80.1s  (data\NVDA\2024-07-19.parquet)
+22:18:53  INFO      FETCH NVDA 2024-07-22  [166/325]
+22:20:23  INFO        -> 1,720,731 trades in 90.2s  (data\NVDA\2024-07-22.parquet)
+22:20:23  INFO      FETCH NVDA 2024-07-23  [167/325]
+22:21:28  INFO        -> 1,308,748 trades in 65.0s  (data\NVDA\2024-07-23.parquet)
+22:21:28  INFO      FETCH NVDA 2024-07-24  [168/325]
+22:23:28  INFO        -> 2,515,455 trades in 119.8s  (data\NVDA\2024-07-24.parquet)
+22:23:28  INFO      FETCH NVDA 2024-07-25  [169/325]
+22:26:20  INFO        -> 3,637,978 trades in 171.9s  (data\NVDA\2024-07-25.parquet)
+22:26:20  INFO      FETCH NVDA 2024-07-26  [170/325]
+22:27:50  INFO        -> 1,840,659 trades in 89.8s  (data\NVDA\2024-07-26.parquet)
+22:27:50  INFO      FETCH NVDA 2024-07-29  [171/325]
+22:29:08  INFO        -> 1,626,170 trades in 77.8s  (data\NVDA\2024-07-29.parquet)
+22:29:08  INFO      FETCH NVDA 2024-07-30  [172/325]
+22:31:55  INFO        -> 3,512,401 trades in 166.5s  (data\NVDA\2024-07-30.parquet)
+22:31:55  INFO      FETCH NVDA 2024-07-31  [173/325]
+22:34:13  INFO        -> 2,931,834 trades in 138.3s  (data\NVDA\2024-07-31.parquet)
+22:34:14  INFO      FETCH NVDA 2024-08-01  [174/325]
+22:36:56  INFO        -> 3,403,133 trades in 162.2s  (data\NVDA\2024-08-01.parquet)
+22:36:56  INFO      FETCH NVDA 2024-08-02  [175/325]
+22:39:47  INFO        -> 3,599,361 trades in 171.0s  (data\NVDA\2024-08-02.parquet)
+22:39:47  INFO      FETCH NVDA 2024-08-05  [176/325]
+22:44:05  INFO        -> 4,748,192 trades in 258.2s  (data\NVDA\2024-08-05.parquet)
+22:44:05  INFO      FETCH NVDA 2024-08-06  [177/325]
+22:46:20  INFO        -> 2,769,503 trades in 134.5s  (data\NVDA\2024-08-06.parquet)
+22:46:20  INFO      FETCH NVDA 2024-08-07  [178/325]
+22:48:38  INFO        -> 2,815,276 trades in 137.9s  (data\NVDA\2024-08-07.parquet)
+22:48:38  INFO      FETCH NVDA 2024-08-08  [179/325]
+22:50:39  INFO        -> 2,575,316 trades in 120.9s  (data\NVDA\2024-08-08.parquet)
+22:50:39  INFO      FETCH NVDA 2024-08-09  [180/325]
+22:52:11  INFO        -> 1,877,430 trades in 91.4s  (data\NVDA\2024-08-09.parquet)
+22:52:11  INFO      FETCH NVDA 2024-08-12  [181/325]
+22:53:54  INFO        -> 2,097,393 trades in 102.8s  (data\NVDA\2024-08-12.parquet)
+22:53:54  INFO      FETCH NVDA 2024-08-13  [182/325]
+22:55:31  INFO        -> 2,004,724 trades in 97.3s  (data\NVDA\2024-08-13.parquet)
+22:55:32  INFO      FETCH NVDA 2024-08-14  [183/325]
+22:57:14  INFO        -> 2,113,468 trades in 102.2s  (data\NVDA\2024-08-14.parquet)
+22:57:14  INFO      FETCH NVDA 2024-08-15  [184/325]
+22:58:49  INFO        -> 1,922,809 trades in 94.6s  (data\NVDA\2024-08-15.parquet)
+22:58:49  INFO      FETCH NVDA 2024-08-16  [185/325]
+23:00:17  INFO        -> 1,734,159 trades in 88.1s  (data\NVDA\2024-08-16.parquet)
+23:00:17  INFO      FETCH NVDA 2024-08-19  [186/325]
+23:01:54  INFO        -> 1,931,152 trades in 96.4s  (data\NVDA\2024-08-19.parquet)
+23:01:54  INFO      FETCH NVDA 2024-08-20  [187/325]
+23:03:26  INFO        -> 1,880,974 trades in 92.0s  (data\NVDA\2024-08-20.parquet)
+23:03:26  INFO      FETCH NVDA 2024-08-21  [188/325]
+23:04:43  INFO        -> 1,536,538 trades in 76.8s  (data\NVDA\2024-08-21.parquet)
+23:04:43  INFO      FETCH NVDA 2024-08-22  [189/325]
+23:06:29  INFO        -> 2,223,854 trades in 106.0s  (data\NVDA\2024-08-22.parquet)
+23:06:29  INFO      FETCH NVDA 2024-08-23  [190/325]
+23:08:06  INFO        -> 2,023,789 trades in 96.7s  (data\NVDA\2024-08-23.parquet)
+23:08:06  INFO      FETCH NVDA 2024-08-26  [191/325]
+23:10:02  INFO        -> 2,151,705 trades in 115.7s  (data\NVDA\2024-08-26.parquet)
+23:10:02  INFO      FETCH NVDA 2024-08-27  [192/325]
+23:11:21  INFO        -> 1,842,945 trades in 79.3s  (data\NVDA\2024-08-27.parquet)
+23:11:21  INFO      FETCH NVDA 2024-08-28  [193/325]
+23:11:55  ERROR       ERROR NVDA 2024-08-28: 
+23:11:55  INFO      FETCH NVDA 2024-08-29  [194/325]
+23:12:02  ERROR       ERROR NVDA 2024-08-29: Unable to allocate output buffer.
+23:12:02  INFO      FETCH NVDA 2024-08-30  [195/325]
+23:13:18  INFO        -> 1,932,981 trades in 75.6s  (data\NVDA\2024-08-30.parquet)
+23:13:18  INFO      FETCH AMZN 2024-06-03  [196/325]
+23:13:30  ERROR       ERROR AMZN 2024-06-03: Unable to allocate output buffer.
+23:13:30  INFO      FETCH AMZN 2024-06-04  [197/325]
+23:13:34  ERROR       ERROR AMZN 2024-06-04: 
+23:13:34  INFO      FETCH AMZN 2024-06-05  [198/325]
+23:13:53  INFO        -> 362,069 trades in 18.4s  (data\AMZN\2024-06-05.parquet)
+23:13:53  INFO      FETCH AMZN 2024-06-06  [199/325]
+23:14:07  INFO        -> 374,063 trades in 14.0s  (data\AMZN\2024-06-06.parquet)
+23:14:07  INFO      FETCH AMZN 2024-06-07  [200/325]
+23:14:22  INFO        -> 336,122 trades in 14.6s  (data\AMZN\2024-06-07.parquet)
+23:14:22  INFO      FETCH AMZN 2024-06-10  [201/325]
+23:14:41  INFO        -> 385,204 trades in 18.7s  (data\AMZN\2024-06-10.parquet)
+23:14:41  INFO      FETCH AMZN 2024-06-11  [202/325]
+23:14:57  INFO        -> 341,810 trades in 15.6s  (data\AMZN\2024-06-11.parquet)
+23:14:57  INFO      FETCH AMZN 2024-06-12  [203/325]
+23:15:13  INFO        -> 443,204 trades in 15.9s  (data\AMZN\2024-06-12.parquet)
+23:15:13  INFO      FETCH AMZN 2024-06-13  [204/325]
+23:15:28  INFO        -> 422,868 trades in 15.5s  (data\AMZN\2024-06-13.parquet)
+23:15:28  INFO      FETCH AMZN 2024-06-14  [205/325]
+23:15:41  INFO        -> 307,414 trades in 12.2s  (data\AMZN\2024-06-14.parquet)
+23:15:41  INFO      FETCH AMZN 2024-06-17  [206/325]
+23:15:57  INFO        -> 432,332 trades in 16.7s  (data\AMZN\2024-06-17.parquet)
+23:15:58  INFO      FETCH AMZN 2024-06-18  [207/325]
+23:16:13  INFO        -> 390,352 trades in 15.0s  (data\AMZN\2024-06-18.parquet)
+23:16:13  INFO      FETCH AMZN 2024-06-19  [208/325]
+23:16:13  WARNING   AMZN 2024-06-19 – 0 trades (market closed or no data)
+23:16:13  INFO      FETCH AMZN 2024-06-20  [209/325]
+23:16:31  INFO        -> 471,779 trades in 18.2s  (data\AMZN\2024-06-20.parquet)
+23:16:32  INFO      FETCH AMZN 2024-06-21  [210/325]
+23:16:48  INFO        -> 435,866 trades in 16.8s  (data\AMZN\2024-06-21.parquet)
+23:16:49  INFO      FETCH AMZN 2024-06-24  [211/325]
+23:17:10  INFO        -> 535,382 trades in 21.6s  (data\AMZN\2024-06-24.parquet)
+23:17:10  INFO      FETCH AMZN 2024-06-25  [212/325]
+23:17:26  INFO        -> 382,095 trades in 15.2s  (data\AMZN\2024-06-25.parquet)
+23:17:26  INFO      FETCH AMZN 2024-06-26  [213/325]
+23:17:58  INFO        -> 649,576 trades in 32.7s  (data\AMZN\2024-06-26.parquet)
+23:17:59  INFO      FETCH AMZN 2024-06-27  [214/325]
+23:18:36  INFO        -> 721,988 trades in 37.3s  (data\AMZN\2024-06-27.parquet)
+23:18:36  INFO      FETCH AMZN 2024-06-28  [215/325]
+23:19:07  INFO        -> 605,552 trades in 30.6s  (data\AMZN\2024-06-28.parquet)
+23:19:07  INFO      FETCH AMZN 2024-07-01  [216/325]
+23:19:25  INFO        -> 501,345 trades in 18.4s  (data\AMZN\2024-07-01.parquet)
+23:19:25  INFO      FETCH AMZN 2024-07-02  [217/325]
+23:19:43  INFO        -> 485,450 trades in 17.6s  (data\AMZN\2024-07-02.parquet)
+23:19:43  INFO      FETCH AMZN 2024-07-03  [218/325]
+23:19:58  INFO        -> 395,382 trades in 14.5s  (data\AMZN\2024-07-03.parquet)
+23:19:58  INFO      FETCH AMZN 2024-07-04  [219/325]
+23:19:58  WARNING   AMZN 2024-07-04 – 0 trades (market closed or no data)
+23:19:58  INFO      FETCH AMZN 2024-07-05  [220/325]
+23:20:17  INFO        -> 451,263 trades in 18.9s  (data\AMZN\2024-07-05.parquet)
+23:20:17  INFO      FETCH AMZN 2024-07-08  [221/325]
+23:20:40  INFO        -> 443,712 trades in 22.6s  (data\AMZN\2024-07-08.parquet)
+23:20:40  INFO      FETCH AMZN 2024-07-09  [222/325]
+23:20:59  INFO        -> 379,505 trades in 18.5s  (data\AMZN\2024-07-09.parquet)
+23:20:59  INFO      FETCH AMZN 2024-07-10  [223/325]
+23:21:19  INFO        -> 414,202 trades in 19.8s  (data\AMZN\2024-07-10.parquet)
+23:21:19  INFO      FETCH AMZN 2024-07-11  [224/325]
+23:21:46  INFO        -> 582,330 trades in 27.3s  (data\AMZN\2024-07-11.parquet)
+23:21:46  INFO      FETCH AMZN 2024-07-12  [225/325]
+23:22:07  INFO        -> 427,400 trades in 20.9s  (data\AMZN\2024-07-12.parquet)
+23:22:07  INFO      FETCH AMZN 2024-07-15  [226/325]
+23:22:32  INFO        -> 571,587 trades in 24.4s  (data\AMZN\2024-07-15.parquet)
+23:22:32  INFO      FETCH AMZN 2024-07-16  [227/325]
+23:22:54  INFO        -> 449,318 trades in 22.0s  (data\AMZN\2024-07-16.parquet)
+23:22:54  INFO      FETCH AMZN 2024-07-17  [228/325]
+23:23:28  INFO        -> 682,972 trades in 33.7s  (data\AMZN\2024-07-17.parquet)
+23:23:28  INFO      FETCH AMZN 2024-07-18  [229/325]
+23:23:56  INFO        -> 672,061 trades in 27.3s  (data\AMZN\2024-07-18.parquet)
+23:23:56  INFO      FETCH AMZN 2024-07-19  [230/325]
+23:24:20  INFO        -> 482,567 trades in 24.7s  (data\AMZN\2024-07-19.parquet)
+23:24:21  INFO      FETCH AMZN 2024-07-22  [231/325]
+23:24:42  INFO        -> 448,838 trades in 21.0s  (data\AMZN\2024-07-22.parquet)
+23:24:42  INFO      FETCH AMZN 2024-07-23  [232/325]
+23:25:05  INFO        -> 489,942 trades in 22.8s  (data\AMZN\2024-07-23.parquet)
+23:25:05  INFO      FETCH AMZN 2024-07-24  [233/325]
+23:25:29  INFO        -> 506,979 trades in 23.8s  (data\AMZN\2024-07-24.parquet)
+23:25:29  INFO      FETCH AMZN 2024-07-25  [234/325]
+23:26:00  INFO        -> 548,319 trades in 30.7s  (data\AMZN\2024-07-25.parquet)
+23:26:00  INFO      FETCH AMZN 2024-07-26  [235/325]
+23:26:18  INFO        -> 375,660 trades in 18.3s  (data\AMZN\2024-07-26.parquet)
+23:26:18  INFO      FETCH AMZN 2024-07-29  [236/325]
+23:26:32  INFO        -> 350,840 trades in 13.7s  (data\AMZN\2024-07-29.parquet)
+23:26:32  INFO      FETCH AMZN 2024-07-30  [237/325]
+23:26:48  INFO        -> 442,172 trades in 15.7s  (data\AMZN\2024-07-30.parquet)
+23:26:48  INFO      FETCH AMZN 2024-07-31  [238/325]
+23:27:10  INFO        -> 474,664 trades in 21.7s  (data\AMZN\2024-07-31.parquet)
+23:27:10  INFO      FETCH AMZN 2024-08-01  [239/325]
+23:27:47  INFO        -> 855,398 trades in 37.5s  (data\AMZN\2024-08-01.parquet)
+23:27:48  INFO      FETCH AMZN 2024-08-02  [240/325]
+23:29:11  INFO        -> 1,669,088 trades in 83.4s  (data\AMZN\2024-08-02.parquet)
+23:29:11  INFO      FETCH AMZN 2024-08-05  [241/325]
+23:29:53  INFO        -> 1,147,666 trades in 42.0s  (data\AMZN\2024-08-05.parquet)
+23:29:54  INFO      FETCH AMZN 2024-08-06  [242/325]
+23:30:19  INFO        -> 674,757 trades in 25.1s  (data\AMZN\2024-08-06.parquet)
+23:30:19  INFO      FETCH AMZN 2024-08-07  [243/325]
+23:30:39  INFO        -> 571,715 trades in 20.6s  (data\AMZN\2024-08-07.parquet)
+23:30:40  INFO      FETCH AMZN 2024-08-08  [244/325]
+23:30:57  INFO        -> 483,389 trades in 17.5s  (data\AMZN\2024-08-08.parquet)
+23:30:57  INFO      FETCH AMZN 2024-08-09  [245/325]
+23:31:12  INFO        -> 394,871 trades in 14.9s  (data\AMZN\2024-08-09.parquet)
+23:31:12  INFO      FETCH AMZN 2024-08-12  [246/325]
+23:31:29  INFO        -> 393,818 trades in 16.7s  (data\AMZN\2024-08-12.parquet)
+23:31:29  INFO      FETCH AMZN 2024-08-13  [247/325]
+23:31:47  INFO        -> 411,882 trades in 17.9s  (data\AMZN\2024-08-13.parquet)
+23:31:47  INFO      FETCH AMZN 2024-08-14  [248/325]
+23:32:01  INFO        -> 376,529 trades in 13.8s  (data\AMZN\2024-08-14.parquet)
+23:32:01  INFO      FETCH AMZN 2024-08-15  [249/325]
+23:32:20  INFO        -> 530,518 trades in 19.0s  (data\AMZN\2024-08-15.parquet)
+23:32:21  INFO      FETCH AMZN 2024-08-16  [250/325]
+23:32:34  INFO        -> 368,948 trades in 13.5s  (data\AMZN\2024-08-16.parquet)
+23:32:34  INFO      FETCH AMZN 2024-08-19  [251/325]
+23:32:47  INFO        -> 358,323 trades in 13.0s  (data\AMZN\2024-08-19.parquet)
+23:32:48  INFO      FETCH AMZN 2024-08-20  [252/325]
+23:32:59  INFO        -> 302,475 trades in 11.1s  (data\AMZN\2024-08-20.parquet)
+23:32:59  INFO      FETCH AMZN 2024-08-21  [253/325]
+23:33:13  INFO        -> 398,162 trades in 14.2s  (data\AMZN\2024-08-21.parquet)
+23:33:13  INFO      FETCH AMZN 2024-08-22  [254/325]
+23:33:28  INFO        -> 402,718 trades in 14.9s  (data\AMZN\2024-08-22.parquet)
+23:33:28  INFO      FETCH AMZN 2024-08-23  [255/325]
+23:33:41  INFO        -> 359,937 trades in 13.0s  (data\AMZN\2024-08-23.parquet)
+23:33:42  INFO      FETCH AMZN 2024-08-26  [256/325]
+23:33:54  INFO        -> 337,939 trades in 12.4s  (data\AMZN\2024-08-26.parquet)
+23:33:54  INFO      FETCH AMZN 2024-08-27  [257/325]
+23:34:08  INFO        -> 377,161 trades in 13.8s  (data\AMZN\2024-08-27.parquet)
+23:34:08  INFO      FETCH AMZN 2024-08-28  [258/325]
+23:34:23  INFO        -> 382,306 trades in 14.4s  (data\AMZN\2024-08-28.parquet)
+23:34:23  INFO      FETCH AMZN 2024-08-29  [259/325]
+23:34:36  INFO        -> 358,888 trades in 13.2s  (data\AMZN\2024-08-29.parquet)
+23:34:36  INFO      FETCH AMZN 2024-08-30  [260/325]
+23:34:51  INFO        -> 398,650 trades in 14.3s  (data\AMZN\2024-08-30.parquet)
+23:34:51  INFO      FETCH GOOGL 2024-06-03  [261/325]
+23:35:02  INFO        -> 310,007 trades in 10.9s  (data\GOOGL\2024-06-03.parquet)
+23:35:02  INFO      FETCH GOOGL 2024-06-04  [262/325]
+23:35:10  INFO        -> 240,152 trades in 8.3s  (data\GOOGL\2024-06-04.parquet)
+23:35:11  INFO      FETCH GOOGL 2024-06-05  [263/325]
+23:35:21  INFO        -> 305,203 trades in 10.8s  (data\GOOGL\2024-06-05.parquet)
+23:35:22  INFO      FETCH GOOGL 2024-06-06  [264/325]
+23:35:31  INFO        -> 271,956 trades in 9.6s  (data\GOOGL\2024-06-06.parquet)
+23:35:31  INFO      FETCH GOOGL 2024-06-07  [265/325]
+23:35:40  INFO        -> 255,975 trades in 8.9s  (data\GOOGL\2024-06-07.parquet)
+23:35:40  INFO      FETCH GOOGL 2024-06-10  [266/325]
+23:35:53  INFO        -> 362,132 trades in 12.7s  (data\GOOGL\2024-06-10.parquet)
+23:35:53  INFO      FETCH GOOGL 2024-06-11  [267/325]
+23:36:04  INFO        -> 294,414 trades in 10.5s  (data\GOOGL\2024-06-11.parquet)
+23:36:04  INFO      FETCH GOOGL 2024-06-12  [268/325]
+23:36:17  INFO        -> 366,714 trades in 12.9s  (data\GOOGL\2024-06-12.parquet)
+23:36:17  INFO      FETCH GOOGL 2024-06-13  [269/325]
+23:36:27  INFO        -> 291,632 trades in 10.1s  (data\GOOGL\2024-06-13.parquet)
+23:36:27  INFO      FETCH GOOGL 2024-06-14  [270/325]
+23:36:36  INFO        -> 235,238 trades in 8.5s  (data\GOOGL\2024-06-14.parquet)
+23:36:36  INFO      FETCH GOOGL 2024-06-17  [271/325]
+23:36:46  INFO        -> 284,607 trades in 10.0s  (data\GOOGL\2024-06-17.parquet)
+23:36:46  INFO      FETCH GOOGL 2024-06-18  [272/325]
+23:36:58  INFO        -> 321,706 trades in 11.7s  (data\GOOGL\2024-06-18.parquet)
+23:36:58  INFO      FETCH GOOGL 2024-06-19  [273/325]
+23:36:58  WARNING   GOOGL 2024-06-19 – 0 trades (market closed or no data)
+23:36:59  INFO      FETCH GOOGL 2024-06-20  [274/325]
+23:37:10  INFO        -> 305,852 trades in 11.8s  (data\GOOGL\2024-06-20.parquet)
+23:37:11  INFO      FETCH GOOGL 2024-06-21  [275/325]
+23:37:27  INFO        -> 422,128 trades in 16.6s  (data\GOOGL\2024-06-21.parquet)
+23:37:27  INFO      FETCH GOOGL 2024-06-24  [276/325]
+23:37:39  INFO        -> 309,085 trades in 11.3s  (data\GOOGL\2024-06-24.parquet)
+23:37:39  INFO      FETCH GOOGL 2024-06-25  [277/325]
+23:37:50  INFO        -> 322,254 trades in 11.3s  (data\GOOGL\2024-06-25.parquet)
+23:37:50  INFO      FETCH GOOGL 2024-06-26  [278/325]
+23:38:01  INFO        -> 284,955 trades in 10.2s  (data\GOOGL\2024-06-26.parquet)
+23:38:01  INFO      FETCH GOOGL 2024-06-27  [279/325]
+23:38:11  INFO        -> 281,455 trades in 10.0s  (data\GOOGL\2024-06-27.parquet)
+23:38:11  INFO      FETCH GOOGL 2024-06-28  [280/325]
+23:38:23  INFO        -> 342,735 trades in 12.1s  (data\GOOGL\2024-06-28.parquet)
+23:38:23  INFO      FETCH GOOGL 2024-07-01  [281/325]
+23:38:33  INFO        -> 281,140 trades in 10.0s  (data\GOOGL\2024-07-01.parquet)
+23:38:34  INFO      FETCH GOOGL 2024-07-02  [282/325]
+23:38:42  INFO        -> 248,424 trades in 8.7s  (data\GOOGL\2024-07-02.parquet)
+23:38:43  INFO      FETCH GOOGL 2024-07-03  [283/325]
+23:38:51  INFO        -> 225,547 trades in 8.2s  (data\GOOGL\2024-07-03.parquet)
+23:38:51  INFO      FETCH GOOGL 2024-07-04  [284/325]
+23:38:51  WARNING   GOOGL 2024-07-04 – 0 trades (market closed or no data)
+23:38:51  INFO      FETCH GOOGL 2024-07-05  [285/325]
+23:39:03  INFO        -> 341,307 trades in 12.1s  (data\GOOGL\2024-07-05.parquet)
+23:39:03  INFO      FETCH GOOGL 2024-07-08  [286/325]
+23:39:15  INFO        -> 329,813 trades in 11.9s  (data\GOOGL\2024-07-08.parquet)
+23:39:16  INFO      FETCH GOOGL 2024-07-09  [287/325]
+23:39:26  INFO        -> 282,794 trades in 10.0s  (data\GOOGL\2024-07-09.parquet)
+23:39:26  INFO      FETCH GOOGL 2024-07-10  [288/325]
+23:39:35  INFO        -> 262,876 trades in 9.7s  (data\GOOGL\2024-07-10.parquet)
+23:39:36  INFO      FETCH GOOGL 2024-07-11  [289/325]
+23:39:51  INFO        -> 411,482 trades in 15.2s  (data\GOOGL\2024-07-11.parquet)
+23:39:51  INFO      FETCH GOOGL 2024-07-12  [290/325]
+23:40:04  INFO        -> 370,742 trades in 13.2s  (data\GOOGL\2024-07-12.parquet)
+23:40:04  INFO      FETCH GOOGL 2024-07-15  [291/325]
+23:40:17  INFO        -> 325,594 trades in 12.2s  (data\GOOGL\2024-07-15.parquet)
+23:40:17  INFO      FETCH GOOGL 2024-07-16  [292/325]
+23:40:29  INFO        -> 330,953 trades in 11.9s  (data\GOOGL\2024-07-16.parquet)
+23:40:29  INFO      FETCH GOOGL 2024-07-17  [293/325]
+23:40:45  INFO        -> 439,832 trades in 15.6s  (data\GOOGL\2024-07-17.parquet)
+23:40:45  INFO      FETCH GOOGL 2024-07-18  [294/325]
+23:41:01  INFO        -> 466,153 trades in 16.1s  (data\GOOGL\2024-07-18.parquet)
+23:41:01  INFO      FETCH GOOGL 2024-07-19  [295/325]
+23:41:13  INFO        -> 325,230 trades in 11.5s  (data\GOOGL\2024-07-19.parquet)
+23:41:13  INFO      FETCH GOOGL 2024-07-22  [296/325]
+23:41:26  INFO        -> 375,285 trades in 13.5s  (data\GOOGL\2024-07-22.parquet)
+23:41:26  INFO      FETCH GOOGL 2024-07-23  [297/325]
+23:41:45  INFO        -> 528,128 trades in 18.4s  (data\GOOGL\2024-07-23.parquet)
+23:41:45  INFO      FETCH GOOGL 2024-07-24  [298/325]
+23:42:13  INFO        -> 770,653 trades in 27.7s  (data\GOOGL\2024-07-24.parquet)
+23:42:13  INFO      FETCH GOOGL 2024-07-25  [299/325]
+23:42:38  INFO        -> 712,342 trades in 25.2s  (data\GOOGL\2024-07-25.parquet)
+23:42:38  INFO      FETCH GOOGL 2024-07-26  [300/325]
+23:42:59  INFO        -> 596,956 trades in 20.9s  (data\GOOGL\2024-07-26.parquet)
+23:42:59  INFO      FETCH GOOGL 2024-07-29  [301/325]
+23:43:11  INFO        -> 327,483 trades in 11.5s  (data\GOOGL\2024-07-29.parquet)
+23:43:11  INFO      FETCH GOOGL 2024-07-30  [302/325]
+23:43:23  INFO        -> 327,942 trades in 11.6s  (data\GOOGL\2024-07-30.parquet)
+23:43:23  INFO      FETCH GOOGL 2024-07-31  [303/325]
+23:43:36  INFO        -> 345,913 trades in 13.3s  (data\GOOGL\2024-07-31.parquet)
+23:43:37  INFO      FETCH GOOGL 2024-08-01  [304/325]
+23:43:58  INFO        -> 413,349 trades in 21.1s  (data\GOOGL\2024-08-01.parquet)
+23:43:58  INFO      FETCH GOOGL 2024-08-02  [305/325]
+23:44:20  INFO        -> 494,033 trades in 22.6s  (data\GOOGL\2024-08-02.parquet)
+23:44:21  INFO      FETCH GOOGL 2024-08-05  [306/325]
+23:45:05  INFO        -> 947,922 trades in 44.2s  (data\GOOGL\2024-08-05.parquet)
+23:45:05  INFO      FETCH GOOGL 2024-08-06  [307/325]
+23:45:33  INFO        -> 610,693 trades in 28.2s  (data\GOOGL\2024-08-06.parquet)
+23:45:33  INFO      FETCH GOOGL 2024-08-07  [308/325]
+23:45:54  INFO        -> 437,092 trades in 20.8s  (data\GOOGL\2024-08-07.parquet)
+23:45:54  INFO      FETCH GOOGL 2024-08-08  [309/325]
+23:46:13  INFO        -> 351,861 trades in 18.3s  (data\GOOGL\2024-08-08.parquet)
+23:46:13  INFO      FETCH GOOGL 2024-08-09  [310/325]
+23:46:31  INFO        -> 381,370 trades in 18.3s  (data\GOOGL\2024-08-09.parquet)
+23:46:31  INFO      FETCH GOOGL 2024-08-12  [311/325]
+23:46:44  INFO        -> 271,763 trades in 12.8s  (data\GOOGL\2024-08-12.parquet)
+23:46:44  INFO      FETCH GOOGL 2024-08-13  [312/325]
+23:46:55  INFO        -> 280,753 trades in 11.0s  (data\GOOGL\2024-08-13.parquet)
+23:46:56  INFO      FETCH GOOGL 2024-08-14  [313/325]
+23:47:16  INFO        -> 516,308 trades in 20.7s  (data\GOOGL\2024-08-14.parquet)
+23:47:17  INFO      FETCH GOOGL 2024-08-15  [314/325]
+23:47:36  INFO        -> 383,979 trades in 19.1s  (data\GOOGL\2024-08-15.parquet)
+23:47:36  INFO      FETCH GOOGL 2024-08-16  [315/325]
+23:47:57  INFO        -> 360,431 trades in 21.1s  (data\GOOGL\2024-08-16.parquet)
+23:47:57  INFO      FETCH GOOGL 2024-08-19  [316/325]
+23:48:02  ERROR       ERROR GOOGL 2024-08-19: Unable to allocate output buffer.
+23:48:03  INFO      FETCH GOOGL 2024-08-20  [317/325]
+23:48:06  ERROR       ERROR GOOGL 2024-08-20: Unable to allocate output buffer.
+23:48:06  INFO      FETCH GOOGL 2024-08-21  [318/325]
+23:48:18  ERROR       ERROR GOOGL 2024-08-21: 
+23:48:18  INFO      FETCH GOOGL 2024-08-22  [319/325]
+23:48:33  ERROR       ERROR GOOGL 2024-08-22: 
+23:48:34  INFO      FETCH GOOGL 2024-08-23  [320/325]
+23:48:40  ERROR       ERROR GOOGL 2024-08-23: Unable to allocate output buffer.
+23:48:40  INFO      FETCH GOOGL 2024-08-26  [321/325]
+23:48:44  ERROR       ERROR GOOGL 2024-08-26: 
+23:48:44  INFO      FETCH GOOGL 2024-08-27  [322/325]
+23:48:58  INFO        -> 227,951 trades in 13.9s  (data\GOOGL\2024-08-27.parquet)
+23:48:58  INFO      FETCH GOOGL 2024-08-28  [323/325]
+23:49:10  INFO        -> 289,257 trades in 11.7s  (data\GOOGL\2024-08-28.parquet)
+23:49:10  INFO      FETCH GOOGL 2024-08-29  [324/325]
+23:49:22  INFO        -> 347,586 trades in 12.2s  (data\GOOGL\2024-08-29.parquet)
+23:49:22  INFO      FETCH GOOGL 2024-08-30  [325/325]
+23:49:32  INFO        -> 277,947 trades in 9.9s  (data\GOOGL\2024-08-30.parquet)

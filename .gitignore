@@ -1,0 +1,27 @@
+# Virtual environment
+venv/
+
+# Data files (parquet, CSV results)
+data/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# Environment
+.env
+
+# IDE / editor
+.claude/
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Article drafts
+medium_article*.md
+medium_article_v*.md
