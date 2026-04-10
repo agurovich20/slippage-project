@@ -5,8 +5,7 @@ In endeavoring to develop a robust trading strategy, one must eventually contend
 
 In this project, I developed a semiparametric GAMLSS-style model to forecast trade slippage in equity markets. The model makes an empirically validated assumption that errors are Laplace distributed, and uses classical machine learning methods to estimate parameters conditional on trade and market features. Given these features, the model produces a full slippage distribution, including a point estimate, calibrated prediction intervals, and the probability of exceeding any slippage threshold. This can be used to systematically filter out trades where costs exceed alpha. Validated on pooled data from six stocks with no per-stock tuning, the model is very well calibrated (within 3 percentage points of accuracy) in the most operationally useful thresholds for trade filtering (≤45% and ≥85%).
 
-A detailed write-up of this project is available on Medium:
-placeholder
+A detailed write-up of this project is available on [Medium](https://medium.com/@arigurovich/predicting-slippage-in-equity-markets-using-probabilistic-machine-learning-2797ab3fb9c0)
 
 ---
 
