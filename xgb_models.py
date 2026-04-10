@@ -1,5 +1,5 @@
 """
-XGBoost slippage models — SHAP analysis, partial dependence, ICE curves, and a
+XGBoost slippage models, SHAP analysis, partial dependence, ICE curves, and a
 side-by-side comparison with Random Forest. LAD and MSE variants treated separately
 since the feature importance structure differs noticeably between them.
 """
