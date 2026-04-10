@@ -1,18 +1,8 @@
 # Equity Trade Slippage Modeling
 
-A semiparametric model for forecasting institutional equity trade slippage using tick-level data from Polygon.io. The model produces full predictive distributions — not just point estimates — using a two-stage location-scale framework with Laplace-distributed errors. Validated on pooled data from six stocks with no per-stock hyperparameter tuning.
+In endeavoring to develop a robust trading strategy, one must eventually contend with the simple fact that trading is not free. Trading costs eat into and can exceed trading alpha, making it of great practical importance to filter out trades whose expected costs exceed expected alpha. These trading costs decompose into explicit fees and implicit costs. Explicit fees, such as brokerage commissions, are known in advance and are typically small for institutional traders. Implicit costs, or slippage, are the focus of this project and are defined as the price displacement between order placement and execution. Slippage further bifurcates into a temporary price displacement component and a permanent market impact component. The temporary price displacement arises from high-frequency traders anticipating incoming volume, insufficient market liquidity to absorb the trade, or simple market drift and volatility during execution latency. Permanent market impact, the non-reverting component of slippage, represents the market learning from the trade.
 
----
-
-## Overview
-
-Trading costs are often the binding constraint on whether a strategy is viable. This project builds a model that, given trade and market features at execution time, produces:
-
-- A point estimate of slippage (in basis points)
-- Calibrated prediction intervals (e.g., the 90% interval contains the true slippage 90% of the time)
-- The probability that slippage exceeds any threshold
-
-The key finding is that **correcting the loss function matters more than model complexity**: switching from MSE to LAD (least absolute deviations) — the MLE under Laplace-distributed errors — outperforms every MSE-trained model on Huber loss, including models with significantly more parameters.
+In this project, I developed a semiparametric GAMLSS-style model to forecast trade slippage in equity markets. The model makes an empirically validated assumption that errors are Laplace distributed, and uses classical machine learning methods to estimate parameters conditional on trade and market features. Given these features, the model produces a full slippage distribution, including a point estimate, calibrated prediction intervals, and the probability of exceeding any slippage threshold. This can be used to systematically filter out trades where costs exceed alpha. Validated on pooled data from six stocks with no per-stock tuning, the model is very well calibrated (within 3 percentage points of accuracy) in the most operationally useful thresholds for trade filtering (≤45% and ≥85%).
 
 ---
 
@@ -44,28 +34,24 @@ One set of hyperparameters, tuned on AAPL only, generalizes to all six stocks wi
 
 ## Data
 
-Sourced via the [Polygon.io](https://polygon.io) API ($79/month tier). Filters applied:
+Sourced via the [Polygon.io](https://polygon.io) API ($79/month tier). I filtered to block trades with notional value ≥ $200,000 on lit exchanges only — dark pool and OTC venues are excluded since there is no measurable slippage on those venues.
 
-- Block trades only: notional value ≥ $200,000
-- Lit exchanges only (dark pool/OTC venues excluded — no measurable slippage)
-- Six stocks: AAPL, COIN, NVDA, AMD, AMZN, TSLA
-- Train: January–August 2024 (or June–August for AAPL feature tuning)
-- Test: September 2024
+| Stock | Train | Test | Mean \|Slippage\| | Notes |
+|---|---|---|---|---|
+| AAPL | 35,020 | 9,152 | 2.1 bps | Primary; all hyperparameters tuned here |
+| AMZN | 15,632 | 3,949 | 2.0 bps | Similar profile to AAPL |
+| AMD | 17,227 | 3,046 | 2.6 bps | Mid-volatility |
+| NVDA | 125,835 | 33,435 | 2.6 bps | Largest dataset |
+| TSLA | 65,329 | 21,115 | 2.8 bps | High volatility |
+| COIN | 15,681 | 959 | 5.8 bps | High volatility, high spread |
 
-| Stock | Train | Test | Mean \|Slippage\| |
-|---|---|---|---|
-| AAPL | 35,020 | 9,152 | 2.1 bps |
-| AMZN | 15,632 | 3,949 | 2.0 bps |
-| AMD | 17,227 | 3,046 | 2.6 bps |
-| NVDA | 125,835 | 33,435 | 2.6 bps |
-| TSLA | 65,329 | 21,115 | 2.8 bps |
-| COIN | 15,681 | 959 | 5.8 bps |
+Train period: January–August 2024 (June–August for AAPL hyperparameter search). Test period: September 2024.
 
 ---
 
 ## Features
 
-**Slippage target:** percentage change from the VWAP of the 1-second bar preceding the block trade to the execution price.
+**Slippage target:** percentage change from the VWAP of the 1-second bar immediately preceding the block trade to the trade's execution price.
 
 | Feature | Description |
 |---|---|
@@ -78,24 +64,26 @@ Sourced via the [Polygon.io](https://polygon.io) API ($79/month tier). Filters a
 | `time_of_day` | Seconds since 9:30 ET |
 | `day_of_week` | Day of week (0=Monday) |
 
+The Roll spread and realized volatility are computed from the 500 trades immediately preceding each block in the full tick stream — not from a fixed time window — so they adapt to the local market rhythm at the time of execution.
+
 ---
 
 ## Model
 
-**Why Laplace?** Fitting candidate distributions to signed slippage confirms that errors follow a Laplace distribution (AIC gap vs Normal: ~24,000 points on AAPL; generalized Gaussian shape parameter ≈ 0.98 vs 2.0 for Normal). Under Laplace errors, LAD is the MLE and is asymptotically twice as efficient as OLS.
+**Why Laplace?** Fitting candidate distributions to signed slippage on both AAPL and COIN confirms that errors follow a Laplace distribution (AIC gap vs Normal: ~24,000 points on AAPL; generalized Gaussian shape parameter ≈ 0.98 vs 2.0 for Normal). Under Laplace errors, LAD (least absolute deviations) is the MLE and is asymptotically twice as efficient as OLS — achieving with 10,000 trades what OLS requires 20,000 to match.
 
 **Two-stage GAMLSS:**
 
 1. **Location model:** XGBoost trained with `reg:absoluteerror` estimates the conditional median `μ(x)`
 2. **Scale model:** A second XGBoost trained with `reg:squarederror` on the absolute residuals `|y − μ̂|` estimates the conditional Laplace scale `b(x)`
 
-From these, any prediction interval follows from the Laplace CDF:
+The two stages are separable because the Laplace MLE gradient with respect to location depends only on the signs of residuals, while the gradient with respect to scale depends only on their magnitudes. From the fitted `μ` and `b`, any prediction interval or exceedance probability follows directly from the Laplace CDF:
 
 ```
 [max(μ̂ − b̂·ln(1/α), 0),  μ̂ + b̂·ln(1/α)]
 ```
 
-**Pooled model:** All six stocks are normalized by each stock's in-sample feature and target medians, then combined into a single training set. A single model fit on this pooled dataset maintains per-stock MAE within 0.06 bps and 90% coverage between 89–93% across all tickers.
+**Pooled model:** Features and targets are normalized by each stock's in-sample medians, then all six stocks are combined into a single training set. A single model fit on this pooled dataset maintains per-stock MAE within 0.06 bps and 90% coverage between 89–93% across all tickers.
 
 ---
 
@@ -117,8 +105,7 @@ From these, any prediction interval follows from the Laplace CDF:
 │                        # prediction interval figures, SHAP beeswarm
 ├── coin_analysis.py     # COIN distribution fits, bootstrap CIs, slippage breakdown
 ├── calibration.py       # Calibration curves for all models and baselines
-├── data/                # Parquet files (tick data, features, gridsearch results)
-└── medium_article_v2.md # Write-up
+└── data/                # Parquet files (tick data, features, gridsearch results)
 ```
 
 ---
@@ -131,19 +118,19 @@ From these, any prediction interval follows from the Laplace CDF:
 pip install numpy pandas pyarrow xgboost scikit-learn statsmodels matplotlib scipy shap polygon-api-client
 ```
 
-**API key:** Replace `API_KEY` in `pipeline.py::run_fetch_trades()` and `run_get_exchanges()` with your own Polygon.io key before fetching new data. The processed feature files in `data/` are already included.
+**API key:** Replace `API_KEY` in `pipeline.py` (`run_fetch_trades` and `run_get_exchanges`) with your own Polygon.io key before fetching new data. The processed feature files in `data/` are already included so the analysis scripts can be run without re-fetching.
 
 ---
 
 ## Running
 
-Each file is independently executable. Functions are prefixed `run_` and called from a `__main__` block:
+Each file is independently executable. Functions are prefixed `run_` and called from a `__main__` block at the bottom of each file:
 
 ```bash
 # Rebuild features (requires raw tick data in data/AAPL/, data/COIN/, etc.)
 python build_features.py
 
-# Run all analysis in order
+# Run analysis scripts in order
 python eda.py
 python ols_baseline.py
 python gridsearch.py
@@ -167,7 +154,7 @@ run_model_comparison_v2()
 
 ---
 
-## Key References
+## References
 
 - Roll, R. (1984). A Simple Implicit Measure of the Effective Bid-Ask Spread. *Journal of Finance*, 39(4), 1127–1139.
 - Lee, C.M. & Ready, M.J. (1991). Inferring Trade Direction from Intraday Data. *Journal of Finance*, 46(2), 733–746.
@@ -176,8 +163,4 @@ run_model_comparison_v2()
 
 ---
 
-## Author
-
 Ari Gurovich — [github.com/agurovich20](https://github.com/agurovich20)
-
-Full write-up: [medium_article_v2.md](medium_article_v2.md)
