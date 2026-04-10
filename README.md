@@ -1,4 +1,5 @@
 # Equity Trade Slippage Modeling
+### Ari Gurovich
 
 In endeavoring to develop a robust trading strategy, one must eventually contend with the simple fact that trading is not free. Trading costs eat into and can exceed trading alpha, making it of great practical importance to filter out trades whose expected costs exceed expected alpha. These trading costs decompose into explicit fees and implicit costs. Explicit fees, such as brokerage commissions, are known in advance and are typically small for institutional traders. Implicit costs, or slippage, are the focus of this project and are defined as the price displacement between order placement and execution. Slippage further bifurcates into a temporary price displacement component and a permanent market impact component. The temporary price displacement arises from high-frequency traders anticipating incoming volume, insufficient market liquidity to absorb the trade, or simple market drift and volatility during execution latency. Permanent market impact, the non-reverting component of slippage, represents the market learning from the trade.
 
