@@ -9,6 +9,73 @@ placeholder
 
 ---
 
+## Repository Structure
+
+```
+.
+├── pipeline.py          # Data fetching (Polygon.io), block trade identification,
+│                        # cross-stock validation pipeline, summary figures
+├── build_features.py    # Feature construction — 500-trade rolling Roll spread and vol
+├── eda.py               # Exploratory analysis: distributions, impact by size/regime,
+│                        # sweep clusters, buy/sell classification
+├── ols_baseline.py      # OLS baselines, residual diagnostics, temporal holdout
+├── gridsearch.py        # Hyperparameter search for XGBoost and RF (MSE and LAD)
+├── xgb_models.py        # XGBoost SHAP analysis, PDPs, ICE curves, RF comparison
+├── rf_models.py         # Random Forest SHAP analysis, ICE curves (overfitting evidence)
+├── gamlss_models.py     # Two-stage location-scale models, RS iterations, pooled GAMLSS
+├── analysis.py          # Coverage tables, Huber loss comparison, model comparison CV,
+│                        # prediction interval figures, SHAP beeswarm
+├── coin_analysis.py     # COIN distribution fits, bootstrap CIs, slippage breakdown
+├── calibration.py       # Calibration curves for all models and baselines
+└── data/                # Parquet files (tick data, features, gridsearch results)
+```
+
+---
+
+## Setup
+
+**Python 3.10+** required.
+
+```bash
+pip install numpy pandas pyarrow xgboost scikit-learn statsmodels matplotlib scipy shap polygon-api-client
+```
+
+**API key:** Replace `API_KEY` in `pipeline.py` (`run_fetch_trades` and `run_get_exchanges`) with your own Polygon.io key before fetching new data. The processed feature files in `data/` are already included so the analysis scripts can be run without re-fetching.
+
+---
+
+## Running
+
+Each file is independently executable. Functions are prefixed `run_` and called from a `__main__` block at the bottom of each file:
+
+```bash
+# Rebuild features (requires raw tick data in data/AAPL/, data/COIN/, etc.)
+python build_features.py
+
+# Run analysis scripts in order
+python eda.py
+python ols_baseline.py
+python gridsearch.py
+python xgb_models.py
+python rf_models.py
+python gamlss_models.py
+python analysis.py
+python coin_analysis.py
+python calibration.py
+
+# Full cross-stock pipeline (fetches data, builds features, fits model for all 6 stocks)
+python pipeline.py
+```
+
+Individual functions can also be called directly:
+
+```python
+from analysis import run_model_comparison_v2
+run_model_comparison_v2()
+```
+
+---
+
 ## Data
 
 Sourced via the [Polygon.io](https://polygon.io) API ($79/month tier). 
@@ -81,71 +148,5 @@ The two stages are separable because the Laplace MLE gradient with respect to lo
 
 ---
 
-## Repository Structure
-
-```
-.
-├── pipeline.py          # Data fetching (Polygon.io), block trade identification,
-│                        # cross-stock validation pipeline, summary figures
-├── build_features.py    # Feature construction — 500-trade rolling Roll spread and vol
-├── eda.py               # Exploratory analysis: distributions, impact by size/regime,
-│                        # sweep clusters, buy/sell classification
-├── ols_baseline.py      # OLS baselines, residual diagnostics, temporal holdout
-├── gridsearch.py        # Hyperparameter search for XGBoost and RF (MSE and LAD)
-├── xgb_models.py        # XGBoost SHAP analysis, PDPs, ICE curves, RF comparison
-├── rf_models.py         # Random Forest SHAP analysis, ICE curves (overfitting evidence)
-├── gamlss_models.py     # Two-stage location-scale models, RS iterations, pooled GAMLSS
-├── analysis.py          # Coverage tables, Huber loss comparison, model comparison CV,
-│                        # prediction interval figures, SHAP beeswarm
-├── coin_analysis.py     # COIN distribution fits, bootstrap CIs, slippage breakdown
-├── calibration.py       # Calibration curves for all models and baselines
-└── data/                # Parquet files (tick data, features, gridsearch results)
-```
-
----
-
-## Setup
-
-**Python 3.10+** required.
-
-```bash
-pip install numpy pandas pyarrow xgboost scikit-learn statsmodels matplotlib scipy shap polygon-api-client
-```
-
-**API key:** Replace `API_KEY` in `pipeline.py` (`run_fetch_trades` and `run_get_exchanges`) with your own Polygon.io key before fetching new data. The processed feature files in `data/` are already included so the analysis scripts can be run without re-fetching.
-
----
-
-## Running
-
-Each file is independently executable. Functions are prefixed `run_` and called from a `__main__` block at the bottom of each file:
-
-```bash
-# Rebuild features (requires raw tick data in data/AAPL/, data/COIN/, etc.)
-python build_features.py
-
-# Run analysis scripts in order
-python eda.py
-python ols_baseline.py
-python gridsearch.py
-python xgb_models.py
-python rf_models.py
-python gamlss_models.py
-python analysis.py
-python coin_analysis.py
-python calibration.py
-
-# Full cross-stock pipeline (fetches data, builds features, fits model for all 6 stocks)
-python pipeline.py
-```
-
-Individual functions can also be called directly:
-
-```python
-from analysis import run_model_comparison_v2
-run_model_comparison_v2()
-```
-
----
 
 Ari Gurovich — [github.com/agurovich20](https://github.com/agurovich20)
