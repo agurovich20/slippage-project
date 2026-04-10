@@ -1,7 +1,7 @@
 """
 Builds feature tables for AAPL and COIN lit buy block trades. The main change in v2 was
 switching from daily aggregates to 500-trade rolling windows for both Roll spread and realized
-vol — see roll_spread_500() inside each function for the implementation.
+vol, see roll_spread_500() inside each function for the implementation.
 """
 
 import os
