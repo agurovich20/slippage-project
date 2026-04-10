@@ -4,11 +4,14 @@ In endeavoring to develop a robust trading strategy, one must eventually contend
 
 In this project, I developed a semiparametric GAMLSS-style model to forecast trade slippage in equity markets. The model makes an empirically validated assumption that errors are Laplace distributed, and uses classical machine learning methods to estimate parameters conditional on trade and market features. Given these features, the model produces a full slippage distribution, including a point estimate, calibrated prediction intervals, and the probability of exceeding any slippage threshold. This can be used to systematically filter out trades where costs exceed alpha. Validated on pooled data from six stocks with no per-stock tuning, the model is very well calibrated (within 3 percentage points of accuracy) in the most operationally useful thresholds for trade filtering (≤45% and ≥85%).
 
+A detailed write-up of this project is available on Medium:
+placeholder
+
 ---
 
 ## Data
 
-Sourced via the [Polygon.io](https://polygon.io) API ($79/month tier). I filtered to block trades with notional value ≥ $200,000 on lit exchanges only — dark pool and OTC venues are excluded since there is no measurable slippage on those venues.
+Sourced via the [Polygon.io](https://polygon.io) API ($79/month tier). 
 
 | Stock | Train | Test | Mean \|Slippage\| | Notes |
 |---|---|---|---|---|
@@ -19,7 +22,7 @@ Sourced via the [Polygon.io](https://polygon.io) API ($79/month tier). I filtere
 | TSLA | 65,329 | 21,115 | 2.8 bps | High volatility |
 | COIN | 15,681 | 959 | 5.8 bps | High volatility, high spread |
 
-Train period: January–August 2024 (June–August for AAPL hyperparameter search). Test period: September 2024.
+Train period: June–August 2024 (January–August for COIN). Test period: September 2024.
 
 ---
 
@@ -38,14 +41,11 @@ Train period: January–August 2024 (June–August for AAPL hyperparameter searc
 | `time_of_day` | Seconds since 9:30 ET |
 | `day_of_week` | Day of week (0=Monday) |
 
-The Roll spread and realized volatility are computed from the 500 trades immediately preceding each block in the full tick stream — not from a fixed time window — so they adapt to the local market rhythm at the time of execution.
-
 ---
 
 ## Model and Results
 
-**Why Laplace?** Fitting candidate distributions to signed slippage on both AAPL and COIN confirms that errors follow a Laplace distribution (AIC gap vs Normal: ~24,000 points on AAPL; generalized Gaussian shape parameter ≈ 0.98 vs 2.0 for Normal). Under Laplace errors, LAD (least absolute deviations) is the MLE and is asymptotically twice as efficient as OLS — achieving with 10,000 trades what OLS requires 20,000 to match. The practical consequence is that correcting the loss function produces more improvement than any increase in model complexity:
-
+Point estimation:
 | Model | AAPL R² | AAPL MAE (bps) | AAPL Huber (δ=1) | COIN R² | COIN MAE (bps) |
 |---|---|---|---|---|---|
 | OLS | 3.3% | 1.76 | 1.32 | 5.8% | 4.02 |
@@ -55,7 +55,7 @@ The Roll spread and realized volatility are computed from the 500 trades immedia
 | XGB-MSE | 8.3% | 1.78 | 1.36 | **14.1%** | 3.69 |
 | XGB-MAE | 6.6% | **1.46** | **1.08** | — | — |
 
-**Two-stage GAMLSS:**
+**Two-stage approaches:**
 
 1. **Location model:** XGBoost trained with `reg:absoluteerror` estimates the conditional median `μ(x)`
 2. **Scale model:** A second XGBoost trained with `reg:squarederror` on the absolute residuals `|y − μ̂|` estimates the conditional Laplace scale `b(x)`
