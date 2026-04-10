@@ -6,32 +6,6 @@ In this project, I developed a semiparametric GAMLSS-style model to forecast tra
 
 ---
 
-## Results
-
-| Model | AAPL R² | AAPL MAE (bps) | AAPL Huber (δ=1) | COIN R² | COIN MAE (bps) |
-|---|---|---|---|---|---|
-| OLS | 3.3% | 1.76 | 1.32 | 5.8% | 4.02 |
-| Linear-LAD | −22.9% | **1.70** | **1.16** | — | — |
-| RF-MSE | 8.6% | 1.74 | 1.32 | 9.7% | 3.72 |
-| RF-MAE | **8.9%** | 1.49 | 1.11 | — | — |
-| XGB-MSE | 8.3% | 1.78 | 1.36 | **14.1%** | 3.69 |
-| XGB-MAE | 6.6% | **1.46** | **1.08** | — | — |
-
-**Calibration (90% nominal level):**
-
-| Stock | Two-Stage Linear | Two-Stage XGBoost |
-|---|---|---|
-| AAPL | 90.9% | 91.5% |
-| COIN | 92.6% | 91.3% |
-| AMZN | — | 90.5% |
-| AMD | — | 90.4% |
-| NVDA | — | 92.0% |
-| TSLA | — | 92.3% |
-
-One set of hyperparameters, tuned on AAPL only, generalizes to all six stocks without retuning.
-
----
-
 ## Data
 
 Sourced via the [Polygon.io](https://polygon.io) API ($79/month tier). I filtered to block trades with notional value ≥ $200,000 on lit exchanges only — dark pool and OTC venues are excluded since there is no measurable slippage on those venues.
@@ -68,9 +42,18 @@ The Roll spread and realized volatility are computed from the 500 trades immedia
 
 ---
 
-## Model
+## Model and Results
 
-**Why Laplace?** Fitting candidate distributions to signed slippage on both AAPL and COIN confirms that errors follow a Laplace distribution (AIC gap vs Normal: ~24,000 points on AAPL; generalized Gaussian shape parameter ≈ 0.98 vs 2.0 for Normal). Under Laplace errors, LAD (least absolute deviations) is the MLE and is asymptotically twice as efficient as OLS — achieving with 10,000 trades what OLS requires 20,000 to match.
+**Why Laplace?** Fitting candidate distributions to signed slippage on both AAPL and COIN confirms that errors follow a Laplace distribution (AIC gap vs Normal: ~24,000 points on AAPL; generalized Gaussian shape parameter ≈ 0.98 vs 2.0 for Normal). Under Laplace errors, LAD (least absolute deviations) is the MLE and is asymptotically twice as efficient as OLS — achieving with 10,000 trades what OLS requires 20,000 to match. The practical consequence is that correcting the loss function produces more improvement than any increase in model complexity:
+
+| Model | AAPL R² | AAPL MAE (bps) | AAPL Huber (δ=1) | COIN R² | COIN MAE (bps) |
+|---|---|---|---|---|---|
+| OLS | 3.3% | 1.76 | 1.32 | 5.8% | 4.02 |
+| Linear-LAD | −22.9% | **1.70** | **1.16** | — | — |
+| RF-MSE | 8.6% | 1.74 | 1.32 | 9.7% | 3.72 |
+| RF-MAE | **8.9%** | 1.49 | 1.11 | — | — |
+| XGB-MSE | 8.3% | 1.78 | 1.36 | **14.1%** | 3.69 |
+| XGB-MAE | 6.6% | **1.46** | **1.08** | — | — |
 
 **Two-stage GAMLSS:**
 
@@ -83,7 +66,18 @@ The two stages are separable because the Laplace MLE gradient with respect to lo
 [max(μ̂ − b̂·ln(1/α), 0),  μ̂ + b̂·ln(1/α)]
 ```
 
-**Pooled model:** Features and targets are normalized by each stock's in-sample medians, then all six stocks are combined into a single training set. A single model fit on this pooled dataset maintains per-stock MAE within 0.06 bps and 90% coverage between 89–93% across all tickers.
+**Calibration (90% nominal level):**
+
+| Stock | Two-Stage Linear | Two-Stage XGBoost |
+|---|---|---|
+| AAPL | 90.9% | 91.5% |
+| COIN | 92.6% | 91.3% |
+| AMZN | — | 90.5% |
+| AMD | — | 90.4% |
+| NVDA | — | 92.0% |
+| TSLA | — | 92.3% |
+
+**Pooled model:** Features and targets are normalized by each stock's in-sample medians, then all six stocks are combined into a single training set. One set of hyperparameters, tuned on AAPL only, generalizes to all six stocks without retuning — maintaining per-stock MAE within 0.06 bps and 90% coverage between 89–93% across all tickers.
 
 ---
 
@@ -151,15 +145,6 @@ Individual functions can also be called directly:
 from analysis import run_model_comparison_v2
 run_model_comparison_v2()
 ```
-
----
-
-## References
-
-- Roll, R. (1984). A Simple Implicit Measure of the Effective Bid-Ask Spread. *Journal of Finance*, 39(4), 1127–1139.
-- Lee, C.M. & Ready, M.J. (1991). Inferring Trade Direction from Intraday Data. *Journal of Finance*, 46(2), 733–746.
-- Rashkovich, V. & Iogansen, A. (2022). Occam's Razor for Bond Trade Costs. *Journal of Fixed Income*, 31(3).
-- Isichenko, M. (2021). *Quantitative Portfolio Management*. Wiley.
 
 ---
 
