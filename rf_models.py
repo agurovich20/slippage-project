@@ -1,5 +1,5 @@
 """
-Random Forest slippage models — holdout evaluation, SHAP/feature importance, and
+Random Forest slippage models, holdout evaluation, SHAP/feature importance, and
 non-linearity analysis for both MSE and LAD objectives. The ICE curves here were
 the clearest evidence of RF overfitting.
 """
