@@ -1,13 +1,7 @@
 """
-Calibration analysis for the XGB GAMLSS slippage model.
-
-Consolidates:
-  - calibration_curves.py     : Laplace coverage curves across 6 stocks
-  - calibration_naive.py      : Naive Gaussian (global mean/std) baseline
-  - calibration_naive_ols.py  : OLS Gaussian baseline
-  - calibration_new_stocks.py : Calibration for NVDA, AMD, AMZN, TSLA
-  - calibration_overlays.py   : Linear vs XGB overlay: AAPL vs COIN
-  - calibration_pooled.py     : Pooled XGB GAMLSS calibration
+Calibration analysis for the Laplace GAMLSS prediction intervals. Covers the XGBoost
+two-stage model across all six stocks, a few baselines (naive Gaussian, OLS+Gaussian),
+linear vs XGB overlays, and the final pooled model.
 """
 
 import os
@@ -25,9 +19,6 @@ import matplotlib.pyplot as plt
 from xgboost import XGBRegressor
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-# calibration_curves.py
-# ══════════════════════════════════════════════════════════════════════════════
 def run_calibration_curves():
     """Calibration curves for XGB GAMLSS Laplace prediction intervals across 6 stocks.
     Plots nominal coverage vs actual coverage at many levels.
@@ -171,9 +162,6 @@ def run_calibration_curves():
     print("\nSaved -> calibration_curves.png")
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-# calibration_naive.py
-# ══════════════════════════════════════════════════════════════════════════════
 def run_calibration_naive():
     """Naive baseline calibration: global mean + global std, Gaussian intervals.
     mu = training mean of |impact|, sigma = training std of |impact|.
@@ -230,7 +218,7 @@ def run_calibration_naive():
         }
         print(f"{ticker}: mu={mu:.2f}  sigma={sigma:.2f}  n_test={len(y_te):,}")
 
-    # -- Calibration curve ---------------------------------------------------------
+    # calibration curve
     fig, ax = plt.subplots(figsize=(9, 9))
 
     for ticker in DATASETS:
@@ -258,7 +246,7 @@ def run_calibration_naive():
     fig.savefig("calibration_naive.png", dpi=150, bbox_inches="tight")
     print("Saved -> calibration_naive.png")
 
-    # -- Coverage deviation --------------------------------------------------------
+    # coverage deviation
     fig2, ax2 = plt.subplots(figsize=(10, 6))
 
     ax2.axhline(0, color="black", lw=1.5, ls="--", alpha=0.6, zorder=1)
@@ -289,9 +277,6 @@ def run_calibration_naive():
     print("\nDone!")
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-# calibration_naive_ols.py
-# ══════════════════════════════════════════════════════════════════════════════
 def run_calibration_naive_ols():
     """Naive Gaussian + OLS baseline calibration.
     mu_i = OLS(spread) per trade, sigma = constant training RMSE.
@@ -357,7 +342,7 @@ def run_calibration_naive_ols():
         }
         print(f"{ticker}: c1={beta[0]:+.4f}  c0={beta[1]:+.4f}  sigma={sigma:.2f}  n_test={len(y_te):,}")
 
-    # -- Calibration curve ---------------------------------------------------------
+    # calibration curve
     fig, ax = plt.subplots(figsize=(9, 9))
 
     for ticker in DATASETS:
@@ -385,7 +370,7 @@ def run_calibration_naive_ols():
     fig.savefig("calibration_naive_ols.png", dpi=150, bbox_inches="tight")
     print("Saved -> calibration_naive_ols.png")
 
-    # -- Coverage deviation --------------------------------------------------------
+    # coverage deviation
     fig2, ax2 = plt.subplots(figsize=(10, 6))
 
     ax2.axhline(0, color="black", lw=1.5, ls="--", alpha=0.6, zorder=1)
@@ -416,9 +401,6 @@ def run_calibration_naive_ols():
     print("\nDone!")
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-# calibration_new_stocks.py
-# ══════════════════════════════════════════════════════════════════════════════
 def run_calibration_new_stocks():
     """Calibration curves and coverage deviation for NVDA, AMD, AMZN, TSLA.
     Two-Stage XGBoost with Laplace intervals, 3 features, fixed AAPL hyperparameters.
@@ -471,7 +453,7 @@ def run_calibration_new_stocks():
         b_te = np.clip(sc.predict(X_te), 0.1, None)
         return mu_te, b_te
 
-    # -- Load and fit all 4 stocks ------------------------------------------------
+    # load and fit all 4 stocks
     results = {}
     for ticker, (tr_f, te_f) in DATASETS.items():
         print(f"Fitting {ticker}...", flush=True)
@@ -540,7 +522,7 @@ def run_calibration_new_stocks():
         print(f"Saved -> {filename}")
         plt.close(fig)
 
-    # -- Figure 1: All 4 stocks on one calibration curve --------------------------
+    # Figure 1: all 4 stocks on one calibration curve
     fig, ax = plt.subplots(figsize=(9, 9))
 
     for ticker in ["NVDA", "AMD", "AMZN", "TSLA"]:
@@ -582,7 +564,7 @@ def run_calibration_new_stocks():
     print("Saved -> calibration_xgb_4stocks.png")
     plt.close(fig)
 
-    # -- Figure 3: Coverage deviation for all 4 stocks ----------------------------
+    # Figure 3: coverage deviation for all 4 stocks
     fig3, ax3 = plt.subplots(figsize=(10, 6))
 
     ax3.axhline(0, color="black", lw=1.5, ls="--", alpha=0.6, zorder=1)
@@ -614,9 +596,6 @@ def run_calibration_new_stocks():
     print("\nDone!")
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-# calibration_overlays.py
-# ══════════════════════════════════════════════════════════════════════════════
 def run_calibration_overlays():
     """Two calibration overlay plots:
       1. Linear GAMLSS: AAPL vs COIN on same axes
@@ -673,7 +652,7 @@ def run_calibration_overlays():
         b_te = np.clip(sc.predict(X_te), 0.1, None)
         return mu_te, b_te
 
-    # -- Load data ----------------------------------------------------------------
+    # load data
     print("Loading data...", flush=True)
 
     datasets = {
@@ -695,7 +674,7 @@ def run_calibration_overlays():
             "y_te": df_te["abs_impact"].to_numpy(dtype=np.float64),
         }
 
-    # -- Fit models and compute calibration curves --------------------------------
+    # fit models and compute calibration curves
     results = {}
 
     for ticker in ["AAPL", "COIN"]:
@@ -719,7 +698,7 @@ def run_calibration_overlays():
     AAPL_COLOR = "#2563eb"
     COIN_COLOR = "#dc2626"
 
-    # -- Figure 1: Linear GAMLSS — AAPL vs COIN ----------------------------------
+    # Figure 1: linear GAMLSS — AAPL vs COIN
     print("Plotting Linear GAMLSS overlay...", flush=True)
 
     fig1, ax1 = plt.subplots(figsize=(8, 8))
@@ -759,7 +738,7 @@ def run_calibration_overlays():
     plt.savefig("calibration_linear_overlay.png", dpi=150, bbox_inches="tight")
     print("Saved -> calibration_linear_overlay.png")
 
-    # -- Figure 2: XGB GAMLSS — AAPL vs COIN -------------------------------------
+    # Figure 2: XGB GAMLSS — AAPL vs COIN
     print("Plotting XGB GAMLSS overlay...", flush=True)
 
     fig2, ax2 = plt.subplots(figsize=(8, 8))
@@ -801,9 +780,6 @@ def run_calibration_overlays():
     print("\nDone!")
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-# calibration_pooled.py
-# ══════════════════════════════════════════════════════════════════════════════
 def run_calibration_pooled():
     """Calibration and coverage plots for the pooled XGB GAMLSS (6 stocks).
 
@@ -844,9 +820,7 @@ def run_calibration_pooled():
         hi = mu + z * b
         return ((y >= lo) & (y <= hi)).mean()
 
-    # ═════════════════════════════════════════════════════════════════════════════
-    # Load data and build pooled training set
-    # ═════════════════════════════════════════════════════════════════════════════
+    # load data, normalize by per-stock median (so pooled features are comparable)
     print("Loading data and normalizing...", flush=True)
 
     stock_data = {}
@@ -893,9 +867,7 @@ def run_calibration_pooled():
     pooled_y = np.concatenate(pooled_y)
     print(f"  Pooled training: {len(pooled_y):,} trades")
 
-    # ═════════════════════════════════════════════════════════════════════════════
-    # Fit pooled model
-    # ═════════════════════════════════════════════════════════════════════════════
+    # fit pooled location + scale models
     print("Fitting pooled location + scale models...", flush=True)
 
     loc_model = XGBRegressor(objective="reg:absoluteerror", tree_method="hist",
@@ -913,9 +885,7 @@ def run_calibration_pooled():
         warnings.simplefilter("ignore")
         scale_model.fit(pooled_X, abs_resid)
 
-    # ═════════════════════════════════════════════════════════════════════════════
-    # Fit per-stock models and compute calibration for both
-    # ═════════════════════════════════════════════════════════════════════════════
+    # fit per-stock models and compute calibration for pooled vs per-stock comparison
     print("Computing calibration curves...", flush=True)
 
     results_pooled = {}
@@ -966,9 +936,7 @@ def run_calibration_pooled():
 
     TICKERS = list(DATASETS.keys())
 
-    # ═════════════════════════════════════════════════════════════════════════════
-    # Figure 1: Pooled calibration — all 6 stocks
-    # ═════════════════════════════════════════════════════════════════════════════
+    # Figure 1: pooled calibration — all 6 stocks
     print("\nPlotting pooled calibration curve...", flush=True)
 
     fig1, ax1 = plt.subplots(figsize=(9, 9))
@@ -1010,9 +978,7 @@ def run_calibration_pooled():
     print("Saved -> calibration_pooled_6stocks.png")
     plt.close(fig1)
 
-    # ═════════════════════════════════════════════════════════════════════════════
-    # Figure 2: Coverage deviation — pooled model
-    # ═════════════════════════════════════════════════════════════════════════════
+    # Figure 2: coverage deviation — pooled model
     print("Plotting coverage deviation...", flush=True)
 
     fig2, ax2 = plt.subplots(figsize=(10, 6))
@@ -1044,9 +1010,7 @@ def run_calibration_pooled():
     print("Saved -> coverage_deviation_pooled.png")
     plt.close(fig2)
 
-    # ═════════════════════════════════════════════════════════════════════════════
-    # Figure 3: Per-stock vs Pooled calibration — side by side
-    # ═════════════════════════════════════════════════════════════════════════════
+    # Figure 3: per-stock vs pooled calibration, side by side
     print("Plotting per-stock vs pooled comparison...", flush=True)
 
     fig3, (ax_ps, ax_pl) = plt.subplots(1, 2, figsize=(18, 8.5))

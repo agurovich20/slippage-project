@@ -1,13 +1,7 @@
 """
-Consolidated analysis scripts for market impact modeling.
-
-Functions:
-  run_compute_tables()         -- Two-stage GAMLSS metrics table (linear & XGB) for AAPL/COIN
-  run_compute_huber_delta2()   -- Huber loss (delta=1 and delta=2) for all 6 models
-  run_ice_roll_vol()           -- ICE plot for roll_vol_500 from RF-MSE
-  run_model_comparison_v2()    -- Five-model comparison v2 (signed and abs targets)
-  run_prediction_intervals()   -- Prediction interval fan charts and size-binned plots
-  run_shap_analysis()          -- SHAP analysis on best XGBoost fold
+Coverage tables, Huber losses, model comparison, prediction interval plots, and SHAP analysis
+for the AAPL/COIN slippage models. Most of the heavy lifting is in run_model_comparison_v2
+(5-model walk-forward CV) and run_prediction_intervals (the two-stage GAMLSS fan charts).
 """
 
 import os
@@ -88,7 +82,7 @@ def run_compute_tables():
         width = (hi - lo).mean()
         return cov, width
 
-    # Load data and compute metrics
+    # load and score
     results = []
     for ticker, (tr_f, te_f) in datasets.items():
         df_tr = pd.read_parquet(tr_f)
@@ -104,12 +98,12 @@ def run_compute_tables():
 
         print(f"{ticker}: train={len(y_tr)}, test={len(y_te)}")
 
-        # Two-Stage Linear Regression
+        # linear
         mu_lin, b_lin = fit_linear_gamlss(X_tr, y_tr, X_te)
         mae_lin = np.mean(np.abs(y_te - mu_lin))
         cov90_lin, w90_lin = compute_coverage(y_te, mu_lin, b_lin, 0.90)
 
-        # Two-Stage XGBoost
+        # XGBoost
         mu_xgb, b_xgb = fit_xgb_gamlss(X_tr, y_tr, X_te)
         mae_xgb = np.mean(np.abs(y_te - mu_xgb))
         cov90_xgb, w90_xgb = compute_coverage(y_te, mu_xgb, b_xgb, 0.90)
@@ -120,7 +114,7 @@ def run_compute_tables():
             "xgb_mae": mae_xgb, "xgb_w90": w90_xgb, "xgb_cov90": cov90_xgb,
         })
 
-    # Print tables
+    # print comparison tables
     print("\n" + "=" * 70)
     print("  Two-Stage Linear Regression")
     print("=" * 70)
@@ -172,7 +166,7 @@ def run_compute_huber_delta2():
       Huber(delta) = mean(h_delta(y - y_hat))
     """
 
-    # ── Data ───────────────────────────────────────────────────────────────────────
+    # data
     FEATURES = [
         "dollar_value", "log_dollar_value", "participation_rate",
         "roll_spread_500", "roll_vol_500", "exchange_id",
@@ -192,7 +186,7 @@ def run_compute_huber_delta2():
     print(f"Train: {len(df_tr):,} trades  |  Test: {len(df_te):,} trades")
     print(f"Test median |impact|: {np.median(y_te):.4f} bps")
 
-    # ── Metrics ────────────────────────────────────────────────────────────────────
+    # metric helpers
     def r2(ytrue, ypred):
         ss_res = ((ytrue - ypred) ** 2).sum()
         ss_tot = ((ytrue - ytrue.mean()) ** 2).sum()
@@ -209,7 +203,7 @@ def run_compute_huber_delta2():
         abs_e = np.abs(e)
         return np.mean(np.where(abs_e <= delta, 0.5 * e**2, delta * (abs_e - 0.5 * delta)))
 
-    # ── Load best hyperparameters from CSVs ────────────────────────────────────────
+    # load best hyperparameters from gridsearch CSVs
     def best_params(csv_path, param_cols):
         df = pd.read_csv(csv_path)
         row = df.sort_values("rank").iloc[0]
@@ -250,7 +244,7 @@ def run_compute_huber_delta2():
     print(f"  RF-MSE  : {best_rf_mse}")
     print(f"  RF-LAD  : {best_rf_lad}")
 
-    # ── Train all 6 models ─────────────────────────────────────────────────────────
+    # train all 6 models
     print("\nTraining models...")
 
     # (1) OLS
@@ -313,7 +307,7 @@ def run_compute_huber_delta2():
     pred_rf_lad = np.maximum(rf_lad.predict(X_te), 0.0)
     print("  RF-LAD done")
 
-    # ── Compute all metrics ────────────────────────────────────────────────────────
+    # compute metrics
     MODELS = [
         ("XGB-LAD", pred_xgb_lad),
         ("RF-LAD",  pred_rf_lad),
@@ -354,11 +348,7 @@ def run_compute_huber_delta2():
 
 
 def run_ice_roll_vol():
-    """
-    Standalone ICE plot for roll_vol_500 from Random Forest MSE model.
-
-    Output: ice_roll_vol.png
-    """
+    """ICE curves for roll_vol_500 from RF-MSE. Saves ice_roll_vol.png."""
 
     FEATURES = [
         "dollar_value", "log_dollar_value", "participation_rate",
@@ -366,7 +356,7 @@ def run_ice_roll_vol():
     ]
     VOL_IDX = FEATURES.index("roll_vol_500")
 
-    # -- Load and train ------------------------------------------------------------
+    # load and train
     df_tr = pd.read_parquet("data/lit_buy_features_v2.parquet")
     df_te = pd.read_parquet("data/lit_buy_features_v2_sep.parquet")
     df_tr["abs_impact"] = df_tr["impact_vwap_bps"].abs()
@@ -386,7 +376,7 @@ def run_ice_roll_vol():
         warnings.simplefilter("ignore")
         model.fit(X_tr, y_tr)
 
-    # -- Compute ICE ---------------------------------------------------------------
+    # compute ICE curves
     print("Computing ICE curves...", flush=True)
     rng = np.random.default_rng(42)
     n_ice = 100
@@ -404,7 +394,7 @@ def run_ice_roll_vol():
 
     pdp_mean = ice.mean(axis=0)
 
-    # -- Plot ----------------------------------------------------------------------
+    # plot
     print("Plotting...", flush=True)
     fig, ax = plt.subplots(figsize=(10, 7))
 
@@ -430,31 +420,12 @@ def run_ice_roll_vol():
 
 def run_model_comparison_v2():
     """
-    Five-model comparison v2 — trade-level features, two targets.
-
-    Feature changes vs v1:
-      daily_roll_spread     -> roll_spread_500   (Roll spread from 500 prior ticks)
-      trail_1min_volatility -> roll_vol_500      (realized vol from 500 prior ticks)
-
-    Targets:
-      A) impact_vwap_bps          (signed — same as v1)
-      B) abs(impact_vwap_bps)     (magnitude, always >= 0)
-
-    Models (same 5 as v1):
-      1. OLS
-      2. Almgren-Chr  (spread + vol*sqrt(prate) + intercept)
-      3. Lasso
-      4. Random Forest
-      5. XGBoost
-
-    CV: time-series 5-fold walk-forward on date blocks (no future leakage).
-
-    Output:
-      aapl_model_comparison_v2_signed.png
-      aapl_model_comparison_v2_abs.png
+    Five-model comparison with 500-trade rolling features, run on both signed and
+    absolute slippage targets. Same five models as v1 (OLS, Almgren, Lasso, RF, XGB),
+    5-fold time-series walk-forward CV. Saves _signed.png and _abs.png.
     """
 
-    # ── 1. Load data ───────────────────────────────────────────────────────────────
+    # load data
     df = pd.read_parquet("data/lit_buy_features_v2.parquet")
     df = df.sort_values("date").reset_index(drop=True)
 
@@ -479,7 +450,7 @@ def run_model_comparison_v2():
     print(f"Dataset: {len(df):,} rows, {df['date'].nunique()} unique dates")
     print(f"Date range: {dates[0]} to {dates[-1]}")
 
-    # ── 2. Time-series 5-fold CV ───────────────────────────────────────────────────
+    # time-series 5-fold walk-forward CV
     n_folds = 5
     unique_dates = np.array(sorted(df["date"].unique()))
     n_days = len(unique_dates)
@@ -506,7 +477,7 @@ def run_model_comparison_v2():
 
     print(f"\n{len(splits)} walk-forward splits\n")
 
-    # ── 3. Helpers ─────────────────────────────────────────────────────────────────
+    # helpers
     def metrics(y_true, y_pred):
         r2   = r2_score(y_true, y_pred)
         mae  = mean_absolute_error(y_true, y_pred)
@@ -637,15 +608,15 @@ def run_model_comparison_v2():
 
         return pd.DataFrame(summary_rows).set_index("model"), results
 
-    # ── 4. Run for signed target ───────────────────────────────────────────────────
+    # signed target
     y_signed = df["impact_vwap_bps"].to_numpy(dtype=np.float64)
     summary_signed, results_signed = run_cv(y_signed, "impact_vwap_bps (signed)")
 
-    # ── 5. Run for abs target ──────────────────────────────────────────────────────
+    # absolute target
     y_abs = np.abs(y_signed)
     summary_abs, results_abs = run_cv(y_abs, "|impact_vwap_bps| (abs)")
 
-    # ── 6. Plot bar charts ─────────────────────────────────────────────────────────
+    # plot bar charts
     model_names = list(results_signed.keys())
     colors = ["#64748b", "#0ea5e9", "#f59e0b", "#10b981", "#ef4444"]
 
@@ -687,7 +658,7 @@ def run_model_comparison_v2():
     make_bar_chart(results_abs,    "|impact_vwap_bps|",
                    "aapl_model_comparison_v2_abs.png")
 
-    # ── 7. Side-by-side summary comparison ────────────────────────────────────────
+    # side-by-side summary
     print("\n\n" + "="*80)
     print("COMPARISON: signed vs abs target  (mean OOS R2)")
     print("="*80)
@@ -702,12 +673,8 @@ def run_model_comparison_v2():
 
 def run_prediction_intervals():
     """
-    Standalone prediction interval visualizations.
-
-    Output:
-      - pred_intervals_fan.png       2x2 fan charts (50/80/90%) sorted by predicted median
-      - pred_intervals_by_size.png   2x2 intervals binned by dollar_value
-      - pred_intervals_linear_vs_xgb.png  AAPL and COIN: Linear vs XGB side by side
+    Prediction interval plots for the two-stage GAMLSS: fan charts sorted by predicted
+    median, size-binned intervals, and a direct linear vs XGB comparison for AAPL/COIN.
     """
 
     FEATURES = [
@@ -749,7 +716,7 @@ def run_prediction_intervals():
         b_te = np.clip(sc.predict(X_te), 0.1, None)
         return mu_te, b_te
 
-    # -- Load data ----------------------------------------------------------------
+    # load data
     print("Loading data...", flush=True)
 
     datasets = {
@@ -772,7 +739,7 @@ def run_prediction_intervals():
             "dollar_te": df_te["dollar_value"].to_numpy(dtype=np.float64),
         }
 
-    # -- Fit all models ------------------------------------------------------------
+    # fit all models
     print("Fitting models...", flush=True)
     results = {}
     for ticker in ["AAPL", "COIN"]:
@@ -987,22 +954,12 @@ def run_prediction_intervals():
 
 def run_shap_analysis():
     """
-    SHAP analysis on the best XGBoost fold (fold 1, OOS R²=+0.625).
-
-    Best fold: train on block 0 (2024-06-03..2024-06-20),
-               test on block 1  (2024-06-21..2024-07-10).
-    Best params: learning_rate=0.05, max_depth=2, min_child_weight=5, n_estimators=50.
-
-    Plots (single figure, 2 rows):
-      Row 0: SHAP beeswarm summary (all 50 test bins × 3 features)
-      Row 1: Partial dependence plots for mean_spread, mean_vol, mean_prate
-              — sweep each feature across its test-set range, other features
-                held at their test-set mean; overlay actual test-bin scatter.
-
-    Output: aapl_shap.png
+    SHAP beeswarm and partial dependence plots using the best XGBoost fold (fold 1,
+    train 2024-06-03..2024-06-20). Reproduces the exact fold so SHAP values match
+    what's discussed in the article. Saves aapl_shap.png.
     """
 
-    # ── Reproduce fold 1 exactly ──────────────────────────────────────────────────
+    # reproduce fold 1 exactly
     df = pd.read_parquet("data/lit_buy_features_v2.parquet")
     df["abs_impact"] = df["impact_vwap_bps"].abs()
     df = df.sort_values("date").reset_index(drop=True)
@@ -1078,7 +1035,7 @@ def run_shap_analysis():
     print(f"Reproduced fold 1  OOS R²={oos_r2:.4f}  "
           f"(train bins={len(tr_bins)}, test bins={len(te_bins)})")
 
-    # ── SHAP values (TreeExplainer on scaled test bins) ───────────────────────────
+    # SHAP values via TreeExplainer on scaled test bins
     explainer  = shap.TreeExplainer(model, X_tr_s)
     shap_vals  = explainer.shap_values(X_te_s)   # (50, 3)
     base_value = explainer.expected_value
@@ -1088,7 +1045,7 @@ def run_shap_analysis():
     for name, mv in zip(FEAT_NAMES, np.abs(shap_vals).mean(axis=0)):
         print(f"  {name:<15} {mv:.5f}")
 
-    # ── Figure layout ─────────────────────────────────────────────────────────────
+    # figure layout
     fig = plt.figure(figsize=(15, 10))
     gs  = gridspec.GridSpec(
         2, 3,
@@ -1102,7 +1059,7 @@ def run_shap_analysis():
     ax_bar  = fig.add_subplot(gs[0, 2])    # mean |SHAP| bar
     ax_pdp  = [fig.add_subplot(gs[1, k]) for k in range(3)]
 
-    # ── Panel A: SHAP beeswarm (manual) ──────────────────────────────────────────
+    # Panel A: SHAP beeswarm (manual)
     mean_abs_shap = np.abs(shap_vals).mean(axis=0)        # (3,)
     order = np.argsort(mean_abs_shap)                      # ascending → top = most important
 
@@ -1149,7 +1106,7 @@ def run_shap_analysis():
     cbar.set_ticks([0, 0.5, 1])
     cbar.set_ticklabels(["low", "mid", "high"], fontsize=7.5)
 
-    # ── Panel B: mean |SHAP| bar chart ────────────────────────────────────────────
+    # Panel B: mean |SHAP| bar chart
     bar_order = np.argsort(mean_abs_shap)[::-1]           # descending for bar
     bar_colors = ["#2563eb", "#16a34a", "#dc2626"]
     bar_labels_short = ["mean_spread", "mean_vol", "mean_prate"]
@@ -1172,7 +1129,7 @@ def run_shap_analysis():
     ax_bar.spines["top"].set_visible(False)
     ax_bar.spines["right"].set_visible(False)
 
-    # ── Panel C: Partial dependence plots ─────────────────────────────────────────
+    # Panel C: partial dependence plots
     # For each feature: sweep across its test-set range, hold other two at test mean.
     # Both sweep and held values pass through the scaler before prediction.
 
@@ -1217,7 +1174,7 @@ def run_shap_analysis():
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
 
-    # ── Supertitle ────────────────────────────────────────────────────────────────
+    # supertitle
     fig.suptitle(
         "AAPL lit buy block trades — SHAP analysis on best XGBoost fold\n"
         "50-bin aggregated data  |  features: mean_spread, mean_vol, mean_prate  "

@@ -1,18 +1,7 @@
 """
-Consolidated EDA scripts for AAPL/COIN block trade slippage analysis.
-
-Functions:
-  run_classify_sides()         - Classify block trades buy/sell, signed impact
-  run_distribution_comparison()- Four-distribution comparison on AAPL lit buy impact
-  run_impact_by_size()         - Signed impact vs trade size (20 quantile bins)
-  run_impact_distribution()    - RI(2022) half-normal/half-Laplace distribution fit
-  run_impact_drivers()         - Impact vs trailing volatility and volume
-  run_lit_buy_scatter()        - AAPL lit-only buy scatter vs size
-  run_scatter_buys()           - AAPL buy block-trade slippage scatter
-  run_adjacent_impact()        - Adjacent-trade price impact
-  run_sweep_clusters()         - Sweep cluster impact vs size
-  run_sweep_forward()          - Forward price impact of sweep clusters
-  run_coin_raw_ols_plot()      - COIN raw slippage OLS fit
+Exploratory analysis for AAPL and COIN block trade slippage. Covers buy/sell
+classification, distribution comparisons, impact by trade size and regime, sweep cluster
+analysis, and raw scatter plots.
 """
 
 import os
@@ -37,10 +26,6 @@ from matplotlib.patches import Patch
 from scipy import stats
 from scipy.optimize import minimize
 
-
-# =============================================================================
-# run_classify_sides
-# =============================================================================
 
 def run_classify_sides():
     """
@@ -70,9 +55,7 @@ def run_classify_sides():
     BLK_PATH = DATA_DIR / "block_trades.parquet"
 
 
-    # ---------------------------------------------------------------------------
     # Tick-test — runs entirely on pre_price already in block_trades.parquet
-    # ---------------------------------------------------------------------------
 
     def classify_blocks(df):
         """
@@ -95,9 +78,7 @@ def run_classify_sides():
         return dirs.fillna(0).astype(np.int8).to_numpy()
 
 
-    # ---------------------------------------------------------------------------
     # Main
-    # ---------------------------------------------------------------------------
 
     blocks = pq.read_table(BLK_PATH).to_pandas()
     log.info("Loaded %d block trades", len(blocks))
@@ -122,7 +103,7 @@ def run_classify_sides():
     pq.write_table(pa.Table.from_pandas(blocks, preserve_index=False), BLK_PATH)
     log.info("Saved updated block_trades.parquet with side + signed_impact_bps")
 
-    # ── Summary stats ─────────────────────────────────────────────────────
+    # Summary stats
     classified = blocks[blocks["side_label"] != "unknown"].dropna(
         subset=["slippage_bps", "signed_impact_bps"]
     ).copy()
@@ -183,7 +164,7 @@ def run_classify_sides():
     )[["buy", "sell"]]
     print(pivot.to_string(float_format="{:.3f}".format))
 
-    # ── Plot ──────────────────────────────────────────────────────────────
+    # Plot
 
     DV_ORDER = [l for l in labels if l in classified["dv_bucket"].cat.categories]
     COLORS   = {"buy": "#3a86ff", "sell": "#e63946"}
@@ -252,10 +233,6 @@ def run_classify_sides():
     log.info("Plot saved -> signed_impact.png")
 
 
-# =============================================================================
-# run_distribution_comparison
-# =============================================================================
-
 def run_distribution_comparison():
     """
     Four-distribution comparison on AAPL lit buy impact_vwap_bps.
@@ -274,7 +251,7 @@ def run_distribution_comparison():
     Output: aapl_distribution_comparison.png
     """
 
-    # ── Load ───────────────────────────────────────────────────────────────────────
+    # Load
     df = pd.read_parquet("data/lit_buy_features_v2.parquet")
     x_all = df["impact_vwap_bps"].to_numpy(dtype=np.float64)
     df["q5"] = pd.qcut(df["roll_spread_500"], q=5, labels=False, duplicates="drop")
@@ -285,13 +262,11 @@ def run_distribution_comparison():
           f"p99={np.percentile(x_all,99):.2f}\n")
 
 
-    # ══════════════════════════════════════════════════════════════════════════════
     # ── Distribution definitions ──────────────────────────────────────────────────
-    # ══════════════════════════════════════════════════════════════════════════════
 
     SQRT_PI2 = np.sqrt(np.pi / 2.0)   # sqrt(pi/2) ≈ 1.2533
 
-    # ── (4) RI helpers ────────────────────────────────────────────────────────────
+    # (4) RI helpers
     def ri_neg_ll(params, x):
         mu, ls, lr = params
         s, r = np.exp(ls), np.exp(lr)
@@ -339,15 +314,13 @@ def run_distribution_comparison():
         return mu_f, s_f, r_f
 
 
-    # ══════════════════════════════════════════════════════════════════════════════
     # ── Unified fit-and-score routine ─────────────────────────────────────────────
-    # ══════════════════════════════════════════════════════════════════════════════
 
     def fit_all(x, label=""):
         n = len(x)
         rows = []
 
-        # ── (1) Normal ───────────────────────────────────────────────────────────
+        # (1) Normal
         mu_n, sig_n = stats.norm.fit(x)
         ll_n  = stats.norm.logpdf(x, mu_n, sig_n).sum()
         ks_n  = stats.ks_1samp(x, lambda t: stats.norm.cdf(t, mu_n, sig_n))
@@ -355,7 +328,7 @@ def run_distribution_comparison():
                          ll=ll_n, ks=ks_n.statistic, ksp=ks_n.pvalue,
                          pdf_fn=lambda g, p=(mu_n,sig_n): stats.norm.pdf(g, *p)))
 
-        # ── (2) Laplace ──────────────────────────────────────────────────────────
+        # (2) Laplace
         loc_l, b_l = stats.laplace.fit(x)
         ll_l  = stats.laplace.logpdf(x, loc_l, b_l).sum()
         ks_l  = stats.ks_1samp(x, lambda t: stats.laplace.cdf(t, loc_l, b_l))
@@ -363,7 +336,7 @@ def run_distribution_comparison():
                          ll=ll_l, ks=ks_l.statistic, ksp=ks_l.pvalue,
                          pdf_fn=lambda g, p=(loc_l,b_l): stats.laplace.pdf(g, *p)))
 
-        # ── (3) Skew-normal ──────────────────────────────────────────────────────
+        # (3) Skew-normal
         a_s, xi_s, om_s = stats.skewnorm.fit(x)
         ll_s  = stats.skewnorm.logpdf(x, a_s, xi_s, om_s).sum()
         ks_s  = stats.ks_1samp(x, lambda t: stats.skewnorm.cdf(t, a_s, xi_s, om_s))
@@ -371,7 +344,7 @@ def run_distribution_comparison():
                          ll=ll_s, ks=ks_s.statistic, ksp=ks_s.pvalue,
                          pdf_fn=lambda g, p=(a_s,xi_s,om_s): stats.skewnorm.pdf(g, *p)))
 
-        # ── (4) RI (half-normal / half-Laplace) ─────────────────────────────────
+        # (4) RI (half-normal / half-Laplace)
         mu_r, s_r, r_r = fit_ri(x)
         ll_r  = -ri_neg_ll([mu_r, np.log(s_r), np.log(r_r)], x)
         ks_r  = stats.ks_1samp(x, lambda t: ri_cdf(np.atleast_1d(t), mu_r, s_r, r_r))
@@ -399,9 +372,7 @@ def run_distribution_comparison():
         return rows
 
 
-    # ══════════════════════════════════════════════════════════════════════════════
     # ── Fit overall + 5 quintiles ─────────────────────════════════════════════────
-    # ══════════════════════════════════════════════════════════════════════════════
 
     print("="*72)
     print("DISTRIBUTION COMPARISON — AAPL lit buy  impact_vwap_bps")
@@ -419,7 +390,7 @@ def run_distribution_comparison():
         rows_q  = fit_all(x_bin, label=label)
         quintile_data.append((label, s_mid, x_bin, rows_q))
 
-    # ── Ranking summary ───────────────────────────────────────────────────────────
+    # Ranking summary
     print(f"\n\n{'='*72}")
     print("AIC RANKING ACROSS REGIMES  (* = best per column)")
     print(f"{'='*72}")
@@ -472,9 +443,7 @@ def run_distribution_comparison():
         print(line)
 
 
-    # ══════════════════════════════════════════════════════════════════════════════
     # ── Plot: 6 panels (overall + 5 quintiles) ───────────────════════════════════
-    # ══════════════════════════════════════════════════════════════════════════════
 
     MODEL_STYLES = {
         "Normal":      dict(color="#2563eb", ls="-",  lw=2.0, label="Normal"),
@@ -545,10 +514,6 @@ def run_distribution_comparison():
     print("\nsaved -> aapl_distribution_comparison.png")
 
 
-# =============================================================================
-# run_impact_by_size
-# =============================================================================
-
 def run_impact_by_size():
     """
     Bin AAPL block trades by dollar_value into 20 equal-count quantile buckets.
@@ -562,9 +527,7 @@ def run_impact_by_size():
     and also plots them raw (unsigned) on a second panel for symmetry inspection.
     """
 
-    # ---------------------------------------------------------------------------
     # Load
-    # ---------------------------------------------------------------------------
     df = pq.read_table(
         "data/block_trades.parquet",
         columns=["dollar_value", "side_label", "impact_vwap_bps"],
@@ -581,9 +544,7 @@ def run_impact_by_size():
 
     N_BINS = 20
 
-    # ---------------------------------------------------------------------------
     # Bin by dollar_value using equal-count quantiles (on the full population)
-    # ---------------------------------------------------------------------------
     df["bin"] = pd.qcut(df["dollar_value"], q=N_BINS, labels=False, duplicates="drop")
 
     def bin_stats(sub):
@@ -611,9 +572,7 @@ def run_impact_by_size():
     buy  = bin_stats_df[bin_stats_df["side"] == "buy" ].sort_values("bin").reset_index(drop=True)
     sell = bin_stats_df[bin_stats_df["side"] == "sell"].sort_values("bin").reset_index(drop=True)
 
-    # ---------------------------------------------------------------------------
     # Print table
-    # ---------------------------------------------------------------------------
     print(f"\n{'='*78}")
     print(f"{'BIN':>4}  {'DV (geom mean $k)':>18}  "
           f"{'BUY n':>7} {'buy mean':>9} {'buy med':>8}  "
@@ -624,9 +583,7 @@ def run_impact_by_size():
               f"{br.n:>7,} {br.mean:>9.3f} {br.median:>8.3f}  "
               f"{sr.n:>7,} {sr.mean:>9.3f} {sr.median:>8.3f}")
 
-    # ---------------------------------------------------------------------------
     # Chart
-    # ---------------------------------------------------------------------------
     BUY_C  = "#2563eb"   # blue
     SELL_C = "#dc2626"   # red
 
@@ -637,7 +594,7 @@ def run_impact_by_size():
         fontsize=13, fontweight="bold", y=1.01,
     )
 
-    # ── Panel A: signed adverse impact (both sides on same axis) ──────────────
+    # Panel A: signed adverse impact (both sides on same axis)
     ax = axes[0]
 
     for side, sdf, color in [("Buy", buy, BUY_C), ("Sell", sell, SELL_C)]:
@@ -666,7 +623,7 @@ def run_impact_by_size():
     ax.grid(True, alpha=0.25)
     ax.grid(True, which="minor", alpha=0.1)
 
-    # ── Panel B: raw (unsigned) impact — buy positive, sell negative ──────────
+    # Panel B: raw (unsigned) impact — buy positive, sell negative
     ax2 = axes[1]
 
     buy_raw  = df[df["side_label"] == "buy" ].groupby("bin", observed=True)["impact_vwap_bps"]
@@ -712,10 +669,6 @@ def run_impact_by_size():
     print("\nChart saved -> impact_by_size.png")
 
 
-# =============================================================================
-# run_impact_distribution
-# =============================================================================
-
 def run_impact_distribution():
     """
     Rashkovich & Iogansen (2022) half-normal / half-Laplace distribution fit
@@ -738,7 +691,7 @@ def run_impact_distribution():
     Output: aapl_impact_distribution.png
     """
 
-    # ── Load ───────────────────────────────────────────────────────────────────────
+    # Load
     df = pd.read_parquet("data/lit_buy_features_v2.parquet")
     print(f"Loaded {len(df):,} trades")
 
@@ -750,7 +703,7 @@ def run_impact_distribution():
           f"std={x_all.std():.4f}  [p1={p1:.2f}, p99={p99:.2f}]")
 
 
-    # ── Distribution helpers ───────────────────────────────────────────────────────
+    # Distribution helpers
     SQRT_PI_OVER_2 = np.sqrt(np.pi / 2.0)
 
     def norm_const(sigma, rho):
@@ -809,11 +762,11 @@ def run_impact_distribution():
         return mu_fit, sigma_fit, rho_fit, ll_fit
 
 
-    # ── Overall fit ────────────────────────────────────────────────────────────────
+    # Overall fit
     print("\n=== Fitting overall distribution ===")
     mu_all, sig_all, rho_all, _ = fit_dist(x_all, "overall")
 
-    # ── 5-bin fits by roll_spread_500 quintile ─────────────────────────────────────
+    # 5-bin fits by roll_spread_500 quintile
     print("\n=== Fitting per spread quintile ===")
     df["q5"] = pd.qcut(df["roll_spread_500"], q=5, labels=False, duplicates="drop")
 
@@ -832,7 +785,7 @@ def run_impact_distribution():
     rhos        = np.array([r[3] for r in bin_results])
 
 
-    # ── Figure ─────────────────────────────────────────────────────────────────────
+    # Figure
     QCOLORS = ["#1d4ed8", "#16a34a", "#ca8a04", "#dc2626", "#7c3aed"]
     QLABELS = [f"Q{i+1}: spread~{spread_mids[i]:.2f} bps" for i in range(5)]
 
@@ -848,7 +801,7 @@ def run_impact_distribution():
     ax3 = fig.add_subplot(gs[0, 2])
 
 
-    # ── Panel 1: Overall histogram + fitted density ───────────────────────────────
+    # Panel 1: Overall histogram + fitted density
     x_clipped = x_all[(x_all >= x_lo) & (x_all <= x_hi)]
     ax1.hist(x_clipped, bins=120, density=True,
              color="#94a3b8", alpha=0.55, edgecolor="none",
@@ -885,7 +838,7 @@ def run_impact_distribution():
     ax1.set_xlim(x_lo, x_hi)
 
 
-    # ── Panel 2: 5 conditional fitted densities overlaid ─────────────────────────
+    # Panel 2: 5 conditional fitted densities overlaid
     for i, (color, label, (s_mid, mu_q, sig_q, rho_q)) in enumerate(
         zip(QCOLORS, QLABELS, bin_results)
     ):
@@ -909,7 +862,7 @@ def run_impact_distribution():
     ax2.set_xlim(x_lo, x_hi)
 
 
-    # ── Panel 3: sigma and rho vs mean spread ─────────────────────────────────────
+    # Panel 3: sigma and rho vs mean spread
     ax3.plot(spread_mids, sigmas, color="#2563eb", lw=2.2, marker="o", ms=7,
              label=f"$\\sigma$ (left half-normal width)")
     ax3.plot(spread_mids, rhos,   color="#f59e0b", lw=2.2, marker="s", ms=7,
@@ -952,10 +905,6 @@ def run_impact_distribution():
     print("\nsaved -> aapl_impact_distribution.png")
 
 
-# =============================================================================
-# run_impact_drivers
-# =============================================================================
-
 def run_impact_drivers():
     """
     For each block trade, compute trailing 1-minute volatility and volume
@@ -963,7 +912,7 @@ def run_impact_drivers():
     Output: aapl_impact_drivers.png
     """
 
-    # ── 1. Load buy block trades ──────────────────────────────────────────────────
+    # 1. Load buy block trades
     bt = pd.read_parquet("data/block_trades.parquet",
         columns=["date", "timestamp_ns", "side_label", "impact_vwap_bps"])
     buys = bt[(bt.side_label == "buy") & bt.impact_vwap_bps.notna()].copy()
@@ -972,7 +921,7 @@ def run_impact_drivers():
 
     ONE_MIN_NS = 60 * 1_000_000_000
 
-    # ── 2. Vectorized trailing features per day via prefix sums ──────────────────
+    # 2. Vectorized trailing features per day via prefix sums
     results = []
 
     for date, grp in buys.groupby("date"):
@@ -1036,7 +985,7 @@ def run_impact_drivers():
     print(f"  trail_vol_bps  — median={valid.trail_vol_bps.median():.2f}  p99={valid.trail_vol_bps.quantile(0.99):.2f}")
     print(f"  trail_vol_sh   — median={valid.trail_vol_shares.median():.0f}  p99={valid.trail_vol_shares.quantile(0.99):.0f}")
 
-    # ── 3. Helper: binned mean ────────────────────────────────────────────────────
+    # 3. Helper: binned mean
     CLIP = 15
 
     def make_bins(df, xcol, q=30):
@@ -1050,7 +999,7 @@ def run_impact_drivers():
         binned["mean_impact"] = binned["mean_impact"].clip(-CLIP, CLIP)
         return df, binned
 
-    # ── 4. Plot ───────────────────────────────────────────────────────────────────
+    # 4. Plot
     fig, axes = plt.subplots(1, 2, figsize=(14, 6))
 
     # — Panel A: impact vs trailing volatility —
@@ -1097,10 +1046,6 @@ def run_impact_drivers():
     plt.savefig("aapl_impact_drivers.png", dpi=150, bbox_inches="tight")
     print("saved -> aapl_impact_drivers.png")
 
-
-# =============================================================================
-# run_lit_buy_scatter
-# =============================================================================
 
 def run_lit_buy_scatter():
     """
@@ -1163,10 +1108,6 @@ def run_lit_buy_scatter():
     print("saved -> aapl_lit_buy_impact.png")
 
 
-# =============================================================================
-# run_scatter_buys
-# =============================================================================
-
 def run_scatter_buys():
     """
     AAPL block-trade slippage scatter (all buy trades, not lit-filtered).
@@ -1216,10 +1157,6 @@ def run_scatter_buys():
     print("saved -> aapl_buy_slippage_scatter.png")
 
 
-# =============================================================================
-# run_adjacent_impact
-# =============================================================================
-
 def run_adjacent_impact():
     """
     For each block trade, find the immediately adjacent trades in the full sequence
@@ -1244,9 +1181,7 @@ def run_adjacent_impact():
     BLK_PATH = DATA_DIR / "block_trades.parquet"
 
 
-    # ---------------------------------------------------------------------------
     # Adjacent-price lookup for one ticker-day file
-    # ---------------------------------------------------------------------------
 
     def adjacent_prices(trade_path, blk_ts, blk_px, blk_sz):
         """
@@ -1312,9 +1247,7 @@ def run_adjacent_impact():
         return pre_prices, post_prices
 
 
-    # ---------------------------------------------------------------------------
     # Main
-    # ---------------------------------------------------------------------------
 
     blocks = pq.read_table(BLK_PATH).to_pandas()
     log.info("Loaded %d block trades", len(blocks))
@@ -1352,7 +1285,7 @@ def run_adjacent_impact():
     pq.write_table(pa.Table.from_pandas(blocks, preserve_index=False), BLK_PATH)
     log.info("Saved block_trades.parquet with pre_adj / post_adj / impact_bps")
 
-    # ── Analytics ─────────────────────────────────────────────────────────
+    # Analytics
     ana = blocks[
         (blocks["side_label"] != "unknown") &
         blocks["impact_bps"].notna()
@@ -1395,7 +1328,7 @@ def run_adjacent_impact():
     )[["buy", "sell"]]
     print(pivot.to_string(float_format="{:.4f}".format))
 
-    # ── Histogram ─────────────────────────────────────────────────────────
+    # Histogram
     CLIP = 30   # bps — cuts <0.1% of extremes for readability
 
     fig, axes = plt.subplots(1, 2, figsize=(13, 5))
@@ -1439,10 +1372,6 @@ def run_adjacent_impact():
     log.info("Plot saved -> adjacent_impact.png")
 
 
-# =============================================================================
-# run_sweep_clusters
-# =============================================================================
-
 def run_sweep_clusters():
     """
     Find lit buy sweep clusters per day (100ms gap, same exchange) and plot
@@ -1454,7 +1383,7 @@ def run_sweep_clusters():
     GAP_NS       = 100_000_000        # 100 ms in nanoseconds
     MIN_DOLLAR   = 200_000
 
-    # ── 1. Find sweep clusters per day ───────────────────────────────────────────
+    # 1. Find sweep clusters per day
     all_clusters = []
     total_raw_lit_buys = 0
 
@@ -1479,7 +1408,7 @@ def run_sweep_clusters():
         ex_all = ex_all[order]
         del order; gc.collect()
 
-        # ── Filter to lit exchanges only ─────────────────────────────────────────
+        # Filter to lit exchanges only
         lit_mask = ~np.isin(ex_all, list(DARK_IDS))
         ts  = ts_all[lit_mask]
         px  = px_all[lit_mask]
@@ -1490,14 +1419,14 @@ def run_sweep_clusters():
         if len(ts) < 2:
             continue
 
-        # ── Tick test: classify each lit trade as buy / sell ─────────────────────
+        # Tick test: classify each lit trade as buy / sell
         dp      = np.diff(px, prepend=px[0])       # first trade gets dp=0
         raw_dir = np.sign(dp).astype(float)
         raw_dir[raw_dir == 0] = np.nan             # zero-ticks: forward-fill
         # pandas ffill handles NaN streaks correctly
         direction = pd.Series(raw_dir).ffill().fillna(1.0).to_numpy()  # leading zeros → buy
 
-        # ── Keep only uptick (buy) trades ────────────────────────────────────────
+        # Keep only uptick (buy) trades
         buy_mask = direction > 0
         b_ts = ts[buy_mask]
         b_px = px[buy_mask]
@@ -1509,7 +1438,7 @@ def run_sweep_clusters():
         if n_buys < 2:
             continue
 
-        # ── Cluster: new cluster when gap > 100 ms OR exchange changes ───────────
+        # Cluster: new cluster when gap > 100 ms OR exchange changes
         gap_arr  = np.empty(n_buys, dtype=np.int64)
         gap_arr[0] = GAP_NS + 1                   # first trade always starts new cluster
         gap_arr[1:] = np.diff(b_ts)
@@ -1517,7 +1446,7 @@ def run_sweep_clusters():
         new_cls  = (gap_arr > GAP_NS) | ex_chg
         cls_id   = new_cls.cumsum()               # 1-indexed cluster labels
 
-        # ── Aggregate per cluster ─────────────────────────────────────────────────
+        # Aggregate per cluster
         unique_cls, first_pos = np.unique(cls_id, return_index=True)
         last_pos  = np.concatenate([first_pos[1:] - 1, [n_buys - 1]])
 
@@ -1572,7 +1501,7 @@ def run_sweep_clusters():
     print(f"  Mean   : {imp.mean():+.4f}")
     print(f"  Std    : {imp.std():.4f}")
 
-    # ── 2. Scatter + binned means ─────────────────────────────────────────────────
+    # 2. Scatter + binned means
     CLIP    = 20
     N_BINS  = 30
 
@@ -1637,10 +1566,6 @@ def run_sweep_clusters():
     print("saved -> aapl_sweep_impact.png")
 
 
-# =============================================================================
-# run_sweep_forward
-# =============================================================================
-
 def run_sweep_forward():
     """
     Forward price impact of AAPL lit buy sweep clusters.
@@ -1670,7 +1595,7 @@ def run_sweep_forward():
     for path in tick_files:
         date = os.path.basename(path).replace(".parquet", "")
 
-        # ── Load ALL trades (lit + dark) for forward price lookup ─────────────────
+        # Load ALL trades (lit + dark) for forward price lookup
         tbl    = pq.read_table(path, columns=["sip_timestamp", "price", "size", "exchange"])
         ts_raw = tbl.column("sip_timestamp").to_numpy(zero_copy_only=False)
         px_raw = tbl.column("price").to_numpy(zero_copy_only=False).astype(np.float32)
@@ -1688,7 +1613,7 @@ def run_sweep_forward():
 
         N_ALL = len(ts_all)
 
-        # ── Lit-only arrays for clustering ────────────────────────────────────────
+        # Lit-only arrays for clustering
         lit_mask = ~np.isin(ex_all, list(DARK_IDS))
         ts = ts_all[lit_mask]
         px = px_all[lit_mask]
@@ -1699,7 +1624,7 @@ def run_sweep_forward():
             del ts_all, px_all, sz_all, ex_all, lit_mask; gc.collect()
             continue
 
-        # ── Tick test on lit trades ───────────────────────────────────────────────
+        # Tick test on lit trades
         dp        = np.diff(px, prepend=px[0])
         raw_dir   = np.sign(dp).astype(float)
         raw_dir[raw_dir == 0] = np.nan
@@ -1714,7 +1639,7 @@ def run_sweep_forward():
             del ts_all, px_all, sz_all, ex_all; gc.collect()
             continue
 
-        # ── Cluster assignment ────────────────────────────────────────────────────
+        # Cluster assignment
         gap_arr     = np.empty(n_buys, dtype=np.int64)
         gap_arr[0]  = GAP_NS + 1
         gap_arr[1:] = np.diff(b_ts)
@@ -1722,7 +1647,7 @@ def run_sweep_forward():
         new_cls     = (gap_arr > GAP_NS) | ex_chg
         cls_id      = new_cls.cumsum()
 
-        # ── Per-cluster aggregation ───────────────────────────────────────────────
+        # Per-cluster aggregation
         unique_cls, first_pos = np.unique(cls_id, return_index=True)
         last_pos  = np.concatenate([first_pos[1:] - 1, [n_buys - 1]])
 
@@ -1741,7 +1666,7 @@ def run_sweep_forward():
         with np.errstate(invalid="ignore", divide="ignore"):
             cluster_impact = (cluster_lp - cluster_fp) / cluster_fp * 10_000
 
-        # ── Forward price lookup (ALL trades, vectorised) ─────────────────────────
+        # Forward price lookup (ALL trades, vectorised)
         def forward_impact(horizon_ns):
             """
             For each cluster, find the first trade in ts_all at
@@ -1785,7 +1710,7 @@ def run_sweep_forward():
         print(f"  {date}: {len(df_day):5,} clusters  "
               f"fwd_1s={n_valid_1s:,}  fwd_5s={n_valid_5s:,}")
 
-    # ── Combine and filter ─────────────────────────────────────────────────────────
+    # Combine and filter
     clusters = pd.concat(all_clusters, ignore_index=True)
     large    = clusters[clusters["dollar_value"] >= MIN_DOLLAR].copy()
 
@@ -1805,7 +1730,7 @@ def run_sweep_forward():
         print(f"  Std    : {s.std():.4f}")
 
 
-    # ── Plot ───────────────────────────────────────────────────────────────────────
+    # Plot
     CLIP   = 15
     N_BINS = 30
 
@@ -1897,10 +1822,6 @@ def run_sweep_forward():
     print("\nsaved -> aapl_sweep_forward.png")
 
 
-# =============================================================================
-# run_coin_raw_ols_plot
-# =============================================================================
-
 def run_coin_raw_ols_plot():
     """
     COIN block trades: raw slippage (pre-tick-test) vs trade size with OLS fit.
@@ -1952,9 +1873,7 @@ def run_coin_raw_ols_plot():
     print("Saved -> coin_raw_ols.png")
 
 
-# =============================================================================
 # Main
-# =============================================================================
 
 if __name__ == "__main__":
     run_classify_sides()

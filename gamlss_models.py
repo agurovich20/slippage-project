@@ -1,13 +1,7 @@
 """
-Consolidated GAMLSS models for block trade impact prediction.
-
-Functions:
-  run_gamlss_laplace()       - Linear LAD location + OLS scale, Laplace intervals
-  run_gamlss_xgb()           - XGBoost GAMLSS with RS iterations
-  run_gamlss_xgb_gengauss()  - Generalized Gaussian extension of XGB GAMLSS
-  run_gamlss_full()          - Full GAMLSS with P-splines and RS algorithm
-  run_rerun_gamlss()         - XGB GAMLSS validated across 6 stocks
-  run_pooled_gamlss()        - Pooled XGB GAMLSS (median-normalized, 6 stocks)
+Two-stage location-scale models for slippage prediction. Starts with the linear
+LAD+OLS baseline, builds up to XGBoost with RS iterations, then extends to generalized
+Gaussian, full P-spline GAMLSS, and finally the pooled six-stock model.
 """
 
 import os
@@ -30,10 +24,6 @@ from scipy.sparse import issparse
 from xgboost import XGBRegressor
 from sklearn.model_selection import GridSearchCV, TimeSeriesSplit
 
-
-# =============================================================================
-# run_gamlss_laplace
-# =============================================================================
 
 def run_gamlss_laplace():
     """
@@ -61,7 +51,7 @@ def run_gamlss_laplace():
         "roll_spread_500", "roll_vol_500", "exchange_id",
     ]
 
-    # -- Helpers ------------------------------------------------------------------
+    # Helpers
 
     def fit_location_model(X_tr, y_tr, X_te):
         """LAD regression (QuantReg tau=0.5) for conditional median."""
@@ -97,7 +87,7 @@ def run_gamlss_laplace():
         return covered, width, lo, hi
 
 
-    # -- Process both tickers ----------------------------------------------------
+    # Process both tickers
 
     TICKERS = [
         ("AAPL", "data/lit_buy_features_v2.parquet", "data/lit_buy_features_v2_sep.parquet"),
@@ -186,12 +176,12 @@ def run_gamlss_laplace():
             "mae_te": mae_te,
         }
 
-    # -- Save CSV -----------------------------------------------------------------
+    # Save CSV
     csv_df = pd.DataFrame(csv_rows)
     csv_df.to_csv("data/gamlss_results.csv", index=False)
     print(f"\nSaved -> data/gamlss_results.csv")
 
-    # -- PLOTS (2 rows x 4 cols) -------------------------------------------------
+    # PLOTS (2 rows x 4 cols)
     fig = plt.figure(figsize=(28, 12))
     gs_fig = gridspec.GridSpec(2, 4, figure=fig, wspace=0.30, hspace=0.40)
 
@@ -205,7 +195,7 @@ def run_gamlss_laplace():
         X_te = r["X_te"]
         abs_resid = r["abs_resid_te"]
 
-        # -- Col 1: Prediction intervals for 200 random trades --------------------
+        # Col 1: Prediction intervals for 200 random trades
         ax1 = fig.add_subplot(gs_fig[row_idx, 0])
 
         n_show = min(200, len(y_te))
@@ -235,7 +225,7 @@ def run_gamlss_laplace():
         ax1.spines["top"].set_visible(False)
         ax1.spines["right"].set_visible(False)
 
-        # -- Col 2: Calibration plot -----------------------------------------------
+        # Col 2: Calibration plot
         ax2 = fig.add_subplot(gs_fig[row_idx, 1])
 
         ax2.plot(r["cal_levels"], r["cal_actual"], color="#2563eb", lw=2.2,
@@ -263,7 +253,7 @@ def run_gamlss_laplace():
         ax2.spines["top"].set_visible(False)
         ax2.spines["right"].set_visible(False)
 
-        # -- Col 3: Binned scale validation ----------------------------------------
+        # Col 3: Binned scale validation
         ax3 = fig.add_subplot(gs_fig[row_idx, 2])
 
         n_bins = 20
@@ -294,7 +284,7 @@ def run_gamlss_laplace():
         ax3.spines["top"].set_visible(False)
         ax3.spines["right"].set_visible(False)
 
-        # -- Col 4: Interval width vs roll_spread_500 -----------------------------
+        # Col 4: Interval width vs roll_spread_500
         ax4 = fig.add_subplot(gs_fig[row_idx, 3])
 
         spread_idx = FEATURES.index("roll_spread_500")
@@ -338,10 +328,6 @@ def run_gamlss_laplace():
     print("Saved -> aapl_coin_gamlss.png")
 
 
-# =============================================================================
-# run_gamlss_xgb
-# =============================================================================
-
 def run_gamlss_xgb():
     """
     GAMLSS-style XGBoost distributional regression for block trade impact.
@@ -379,7 +365,7 @@ def run_gamlss_xgb():
         "min_child_weight": [10, 20],
     }
 
-    # -- Helpers ------------------------------------------------------------------
+    # Helpers
 
     def fit_location_model(X_tr, y_tr, X_te):
         """XGBoost LAD for conditional median."""
@@ -428,7 +414,7 @@ def run_gamlss_xgb():
         return covered, width, lo, hi
 
 
-    # -- Process both tickers ----------------------------------------------------
+    # Process both tickers
 
     TICKERS = [
         ("AAPL", "data/lit_buy_features_v2.parquet", "data/lit_buy_features_v2_sep.parquet"),
@@ -488,7 +474,7 @@ def run_gamlss_xgb():
             key = f"f{i}"
             print(f"    {feat:<22} {imp_s.get(key, 0):.2f}")
 
-        # -- Save two-stage (iteration 0) results for comparison -------------------
+        # Save two-stage (iteration 0) results for comparison
         mae_te_iter0 = mae_te
         mu_hat_te_iter0 = mu_hat_te.copy()
         b_hat_te_iter0 = b_hat_te.copy()
@@ -541,7 +527,7 @@ def run_gamlss_xgb():
         mae_te_rs = np.mean(np.abs(y_te - mu_hat_te))
         print(f"\n  RS converged: Test MAE = {mae_te_rs:.4f}")
 
-        # -- Save RS (iteration 0) test metrics for comparison table ---------------
+        # Save RS (iteration 0) test metrics for comparison table
         iter0_coverage = {}
         for level in [0.50, 0.80, 0.90]:
             cov0, width0, _, _ = compute_coverage(y_te, mu_hat_te_iter0, b_hat_te_iter0, level)
@@ -598,12 +584,12 @@ def run_gamlss_xgb():
             "mae_te": mae_te_rs,
         }
 
-    # -- Save CSV -----------------------------------------------------------------
+    # Save CSV
     csv_df = pd.DataFrame(csv_rows)
     csv_df.to_csv("data/gamlss_xgb_results.csv", index=False)
     print(f"\nSaved -> data/gamlss_xgb_results.csv")
 
-    # -- RS Comparison table: Two-Stage vs Converged RS ----------------------------
+    # RS Comparison table: Two-Stage vs Converged RS
     print(f"\n{'=' * 90}")
     print("  COMPARISON: Two-Stage (Iter 0) vs RS-Converged (Final Iter)")
     print(f"{'=' * 90}")
@@ -623,7 +609,7 @@ def run_gamlss_xgb():
 
     print(f"\n  Nominal targets:  90% -> 0.9000   80% -> 0.8000   50% -> 0.5000")
 
-    # -- Stage 5: Comparison table with linear GAMLSS ----------------------------
+    # Stage 5: Comparison table with linear GAMLSS
     print(f"\n{'=' * 80}")
     print("  COMPARISON: XGB GAMLSS vs Linear GAMLSS")
     print(f"{'=' * 80}")
@@ -656,7 +642,7 @@ def run_gamlss_xgb():
                       f"{lr['test_mae'].values[0]:>8.4f} "
                       f"{lr['mean_interval_width'].values[0]:>10.4f}")
 
-    # -- Stage 6: Plots (2 rows x 4 cols) ----------------------------------------
+    # Stage 6: Plots (2 rows x 4 cols)
     fig = plt.figure(figsize=(28, 12))
     gs_fig = gridspec.GridSpec(2, 4, figure=fig, wspace=0.30, hspace=0.40)
 
@@ -670,7 +656,7 @@ def run_gamlss_xgb():
         X_te = r["X_te"]
         abs_resid = r["abs_resid_te"]
 
-        # -- Col 1: Prediction intervals for 200 random trades --------------------
+        # Col 1: Prediction intervals for 200 random trades
         ax1 = fig.add_subplot(gs_fig[row_idx, 0])
 
         n_show = min(200, len(y_te))
@@ -699,7 +685,7 @@ def run_gamlss_xgb():
         ax1.spines["top"].set_visible(False)
         ax1.spines["right"].set_visible(False)
 
-        # -- Col 2: Calibration plot -----------------------------------------------
+        # Col 2: Calibration plot
         ax2 = fig.add_subplot(gs_fig[row_idx, 1])
 
         ax2.plot(r["cal_levels"], r["cal_actual"], color="#2563eb", lw=2.2,
@@ -726,7 +712,7 @@ def run_gamlss_xgb():
         ax2.spines["top"].set_visible(False)
         ax2.spines["right"].set_visible(False)
 
-        # -- Col 3: Binned scale validation ----------------------------------------
+        # Col 3: Binned scale validation
         ax3 = fig.add_subplot(gs_fig[row_idx, 2])
 
         n_bins = 20
@@ -757,7 +743,7 @@ def run_gamlss_xgb():
         ax3.spines["top"].set_visible(False)
         ax3.spines["right"].set_visible(False)
 
-        # -- Col 4: Interval width vs roll_spread_500 -----------------------------
+        # Col 4: Interval width vs roll_spread_500
         ax4 = fig.add_subplot(gs_fig[row_idx, 3])
 
         spread_idx = FEATURES.index("roll_spread_500")
@@ -801,7 +787,7 @@ def run_gamlss_xgb():
     print("Saved -> aapl_coin_gamlss_xgb.png")
     plt.close(fig)
 
-    # -- RS Convergence Plot -------------------------------------------------------
+    # RS Convergence Plot
     AAPL_COLOR = "#2563eb"
     COIN_COLOR = "#dc2626"
 
@@ -889,10 +875,6 @@ def run_gamlss_xgb():
     plt.close(fig_rs)
 
 
-# =============================================================================
-# run_gamlss_xgb_gengauss
-# =============================================================================
-
 def run_gamlss_xgb_gengauss():
     """
     Generalized Gaussian extension of XGB GAMLSS.
@@ -906,7 +888,7 @@ def run_gamlss_xgb_gengauss():
       - aapl_coin_gengauss.png
     """
 
-    # -- Same config as gamlss_xgb.py --------------------------------------------
+    # Same config as gamlss_xgb.py
     FEATURES = [
         "dollar_value", "log_dollar_value", "participation_rate",
         "roll_spread_500", "roll_vol_500", "exchange_id",
@@ -958,7 +940,7 @@ def run_gamlss_xgb_gengauss():
         return best, gs.best_params_, b_hat_tr, b_hat_te
 
 
-    # -- Generalized Gaussian helpers ---------------------------------------------
+    # Generalized Gaussian helpers
 
     def gengauss_loglik(p, z):
         """
@@ -1010,7 +992,7 @@ def run_gamlss_xgb_gengauss():
         return covered, width
 
 
-    # -- Process both tickers -----------------------------------------------------
+    # Process both tickers
 
     TICKERS = [
         ("AAPL", "data/lit_buy_features_v2.parquet", "data/lit_buy_features_v2_sep.parquet"),
@@ -1119,7 +1101,7 @@ def run_gamlss_xgb_gengauss():
             "cal_gengauss": np.array(cal_gengauss),
         }
 
-    # -- Summary print ------------------------------------------------------------
+    # Summary print
     print(f"\n\n{'=' * 80}")
     print("  SUMMARY")
     print(f"{'=' * 80}")
@@ -1134,9 +1116,7 @@ def run_gamlss_xgb_gengauss():
         print(f"    90% coverage:  Laplace={r['laplace_covs'][0.90][0]:.4f}  "
               f"GenGauss={r['gg_covs'][0.90][0]:.4f}  (nominal=0.90)")
 
-    # =============================================================================
     # FIGURE: 2 rows (AAPL, COIN) x 3 columns
-    # =============================================================================
     fig = plt.figure(figsize=(22, 13))
     gs_fig = gridspec.GridSpec(2, 3, figure=fig, wspace=0.30, hspace=0.42)
 
@@ -1147,7 +1127,7 @@ def run_gamlss_xgb_gengauss():
         p_hat = r["p_hat"]
         z_te = r["z_te"]
 
-        # -- Col 1: Calibration curves (Laplace vs GenGaussian) -------------------
+        # Col 1: Calibration curves (Laplace vs GenGaussian)
         ax1 = fig.add_subplot(gs_fig[row_idx, 0])
 
         ax1.plot([0, 1], [0, 1], color="black", lw=1.2, ls="--", alpha=0.5,
@@ -1183,7 +1163,7 @@ def run_gamlss_xgb_gengauss():
         ax1.spines["top"].set_visible(False)
         ax1.spines["right"].set_visible(False)
 
-        # -- Col 2: Histogram of |z| with theoretical densities -------------------
+        # Col 2: Histogram of |z| with theoretical densities
         ax2 = fig.add_subplot(gs_fig[row_idx, 1])
 
         clip_z = np.percentile(z_te, 98)
@@ -1216,7 +1196,7 @@ def run_gamlss_xgb_gengauss():
         ax2.spines["top"].set_visible(False)
         ax2.spines["right"].set_visible(False)
 
-        # -- Col 3: QQ plot of z against GenGaussian quantiles --------------------
+        # Col 3: QQ plot of z against GenGaussian quantiles
         ax3 = fig.add_subplot(gs_fig[row_idx, 2])
 
         # Use signed standardized residuals for QQ
@@ -1265,10 +1245,6 @@ def run_gamlss_xgb_gengauss():
     print("\nDone!")
 
 
-# =============================================================================
-# run_gamlss_full
-# =============================================================================
-
 def run_gamlss_full():
     """
     Full GAMLSS (Rigby & Stasinopoulos 2005) for Laplace distribution.
@@ -1296,7 +1272,7 @@ def run_gamlss_full():
     ]
 
 
-    # ── P-Spline Design Matrix ───────────────────────────────────────────────────
+    # P-Spline Design Matrix
 
     class GAMLSSDesign:
         """Design matrix: intercept + P-spline basis for each feature."""
@@ -1357,7 +1333,7 @@ def run_gamlss_full():
             return P
 
 
-    # ── GAMLSS fitting ───────────────────────────────────────────────────────────
+    # GAMLSS fitting
 
     def laplace_deviance(y, mu, b):
         """Global deviance = -2 * log-likelihood."""
@@ -1405,7 +1381,7 @@ def run_gamlss_full():
         beta_b = None
 
         for it in range(1, max_iter + 1):
-            # ── Update mu (identity link) ──
+            # Update mu (identity link)
             # Laplace score for mu: sign(y - mu) / b
             # Fisher weight: 1 / b^2
             # Working variable: z_mu = mu + score / weight = mu + sign(y - mu) * b
@@ -1432,7 +1408,7 @@ def run_gamlss_full():
             mu = mu_new
             beta_mu = beta_mu_new
 
-            # ── Update b (log link: eta_b = log(b)) ──
+            # Update b (log link: eta_b = log(b))
             # Laplace score for log(b): -1 + |y - mu| / b
             # Fisher weight: 1
             # Working variable: z_b = log(b) + (-1 + |y - mu| / b)
@@ -1490,7 +1466,7 @@ def run_gamlss_full():
         return cov, width
 
 
-    # ── Main ─────────────────────────────────────────────────────────────────────
+    # Main
 
     TICKERS = [
         ("AAPL", "data/lit_buy_features_v2.parquet", "data/lit_buy_features_v2_sep.parquet"),
@@ -1541,7 +1517,7 @@ def run_gamlss_full():
         }
 
 
-    # ── Comparison table ─────────────────────────────────────────────────────────
+    # Comparison table
     print(f"\n{'=' * 90}")
     print("  COMPARISON: Full GAMLSS vs Two-Stage XGBoost (RS)")
     print(f"{'=' * 90}")
@@ -1579,7 +1555,7 @@ def run_gamlss_full():
     print(f"\n  Nominal targets:  90% -> 0.9000   80% -> 0.8000   50% -> 0.5000")
 
 
-    # ── Fit Two-Stage XGB inline for calibration curve overlay ───────────────────
+    # Fit Two-Stage XGB inline for calibration curve overlay
     LOC_PARAMS = dict(max_depth=3, n_estimators=200, learning_rate=0.07,
                       min_child_weight=5, reg_alpha=10, reg_lambda=10)
 
@@ -1613,7 +1589,7 @@ def run_gamlss_full():
     print("Two-Stage XGB fitted for overlay comparison.")
 
 
-    # ── Plot ─────────────────────────────────────────────────────────────────────
+    # Plot
     AAPL_COLOR = "#2563eb"
     COIN_COLOR = "#dc2626"
     cal_levels = np.linspace(0.05, 0.99, 50)
@@ -1621,7 +1597,7 @@ def run_gamlss_full():
     fig = plt.figure(figsize=(20, 16))
     gs = fig.add_gridspec(2, 2, wspace=0.30, hspace=0.35)
 
-    # ── Panel 1 (top-left): Deviance convergence ─────────────────────────────────
+    # Panel 1 (top-left): Deviance convergence
     ax1 = fig.add_subplot(gs[0, 0])
     for ticker, color, marker in [("AAPL", AAPL_COLOR, "o"), ("COIN", COIN_COLOR, "s")]:
         dh = results[ticker]["dev_history"]
@@ -1649,7 +1625,7 @@ def run_gamlss_full():
     ax1_in.grid(True, alpha=0.15)
     ax1_in.set_title("Raw deviance", fontsize=7)
 
-    # ── Panel 2 (top-right): Calibration curves — GAMLSS vs XGB ─────────────────
+    # Panel 2 (top-right): Calibration curves — GAMLSS vs XGB
     ax2 = fig.add_subplot(gs[0, 1])
 
     ax2.fill_between([0, 1], [0, 1], [0.05, 1.05], color="gray", alpha=0.06)
@@ -1681,7 +1657,7 @@ def run_gamlss_full():
     ax2.spines["top"].set_visible(False)
     ax2.spines["right"].set_visible(False)
 
-    # ── Panel 3 (bottom-left): Coverage deviation ────────────────────────────────
+    # Panel 3 (bottom-left): Coverage deviation
     ax3 = fig.add_subplot(gs[1, 0])
 
     ax3.axhline(0, color="black", lw=1.2, ls="--", alpha=0.5, zorder=1)
@@ -1714,7 +1690,7 @@ def run_gamlss_full():
     ax3.spines["top"].set_visible(False)
     ax3.spines["right"].set_visible(False)
 
-    # ── Panel 4 (bottom-right): Summary comparison table as chart ────────────────
+    # Panel 4 (bottom-right): Summary comparison table as chart
     ax4 = fig.add_subplot(gs[1, 1])
     ax4.axis("off")
 
@@ -1776,7 +1752,7 @@ def run_gamlss_full():
     plt.close(fig)
 
 
-    # ── Fan Plot ─────────────────────────────────────────────────────────────────
+    # Fan Plot
     print("Plotting fan charts...")
 
     rng = np.random.default_rng(42)
@@ -1812,7 +1788,7 @@ def run_gamlss_full():
         n_trades = min(n_show, len(y_te))
         idx = rng.choice(len(y_te), size=n_trades, replace=False)
 
-        # ── Left column: Full GAMLSS ──
+        # Left column: Full GAMLSS
         ax_g = axes_fan[row, 0]
         sort_g = np.argsort(mu_te[idx])
         idx_g = idx[sort_g]
@@ -1855,7 +1831,7 @@ def run_gamlss_full():
         ax_g.spines["top"].set_visible(False)
         ax_g.spines["right"].set_visible(False)
 
-        # ── Right column: Two-Stage XGBoost ──
+        # Right column: Two-Stage XGBoost
         ax_x = axes_fan[row, 1]
         sort_x = np.argsort(mu_te_x[idx])
         idx_x = idx[sort_x]
@@ -1910,10 +1886,6 @@ def run_gamlss_full():
     print("Saved -> gamlss_fan_chart.png")
     plt.close(fig_fan)
 
-
-# =============================================================================
-# run_rerun_gamlss
-# =============================================================================
 
 def run_rerun_gamlss():
     """
@@ -2160,10 +2132,6 @@ def run_rerun_gamlss():
     print("Saved -> data/cross_stock_results.csv")
 
 
-# =============================================================================
-# run_pooled_gamlss
-# =============================================================================
-
 def run_pooled_gamlss():
     """
     Pooled XGB GAMLSS: single model trained on normalized, pooled data from 6 stocks.
@@ -2196,9 +2164,7 @@ def run_pooled_gamlss():
                         min_child_weight=20, reg_alpha=1, reg_lambda=1)
 
 
-    # ═════════════════════════════════════════════════════════════════════════════
     # STEP 1: Load and pool training data
-    # ═════════════════════════════════════════════════════════════════════════════
     print("STEP 1: Loading and normalizing training data...")
 
     stock_data = {}
@@ -2268,9 +2234,7 @@ def run_pooled_gamlss():
     print(f"\n  Pooled training set: {len(pooled_y):,} trades")
 
 
-    # ═════════════════════════════════════════════════════════════════════════════
     # STEP 2: Fit pooled location model
-    # ═════════════════════════════════════════════════════════════════════════════
     print("\nSTEP 2: Fitting pooled location model (XGB LAD)...")
 
     loc_model = XGBRegressor(
@@ -2286,9 +2250,7 @@ def run_pooled_gamlss():
     print(f"  Pooled train MAE (normalized): {mae_tr_norm:.4f}")
 
 
-    # ═════════════════════════════════════════════════════════════════════════════
     # STEP 3: Fit pooled scale model
-    # ═════════════════════════════════════════════════════════════════════════════
     print("\nSTEP 3: Fitting pooled scale model (XGB MSE on |residuals|)...")
 
     abs_resid_tr = np.abs(pooled_y - mu_pooled_tr)
@@ -2303,9 +2265,7 @@ def run_pooled_gamlss():
     print(f"  Scale model fitted on {len(abs_resid_tr):,} residuals")
 
 
-    # ═════════════════════════════════════════════════════════════════════════════
     # STEP 4: Evaluate per stock
-    # ═════════════════════════════════════════════════════════════════════════════
     print("\nSTEP 4: Evaluating pooled model on each stock's September holdout...\n")
 
     pooled_results = {}
@@ -2347,9 +2307,7 @@ def run_pooled_gamlss():
               f"90% width={cov_data[0.90][1]:.2f}")
 
 
-    # ═════════════════════════════════════════════════════════════════════════════
     # STEP 5: Fit per-stock models for comparison
-    # ═════════════════════════════════════════════════════════════════════════════
     print("\nFitting per-stock models for comparison...")
 
     perstock_results = {}
@@ -2400,9 +2358,7 @@ def run_pooled_gamlss():
         }
 
 
-    # ═════════════════════════════════════════════════════════════════════════════
     # STEP 5: Comparison table
-    # ═════════════════════════════════════════════════════════════════════════════
     print(f"\n{'=' * 95}")
     print("  COMPARISON: Per-Stock XGB GAMLSS vs Pooled XGB GAMLSS")
     print(f"{'=' * 95}")
@@ -2428,9 +2384,7 @@ def run_pooled_gamlss():
     print(f"\n  Nominal 90% target: 0.9000")
 
 
-    # ═════════════════════════════════════════════════════════════════════════════
     # STEP 6: Figure
-    # ═════════════════════════════════════════════════════════════════════════════
     print("\nPlotting comparison...")
 
     tickers_ordered = list(DATASETS.keys())
@@ -2497,9 +2451,7 @@ def run_pooled_gamlss():
     print("Saved -> pooled_vs_perstock.png")
 
 
-# =============================================================================
 # Main
-# =============================================================================
 
 if __name__ == "__main__":
     run_gamlss_laplace()

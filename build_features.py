@@ -1,10 +1,7 @@
 """
-Consolidated feature-building scripts for block trade analysis.
-
-Functions:
-  run_build_lit_buy_features_v2() -- AAPL lit buy features v2 (roll spread/vol 500-tick window)
-  run_build_lit_buy_sep()         -- Same but September 2024 only
-  run_build_coin_features()       -- COIN lit buy features with AAPL comparison
+Builds feature tables for AAPL and COIN lit buy block trades. The main change in v2 was
+switching from daily aggregates to 500-trade rolling windows for both Roll spread and realized
+vol — see roll_spread_500() inside each function for the implementation.
 """
 
 import os
@@ -17,25 +14,15 @@ import pandas as pd
 
 def run_build_lit_buy_features_v2():
     """
-    Build feature table v2 for AAPL lit-only buy block trades.
+    Feature table v2 for AAPL lit-only buy block trades.
 
-    Changes vs v1:
-      - daily_roll_spread    → roll_spread_500  (Roll 1984, last 500 ticks before the trade)
-      - trail_1min_volatility → roll_vol_500   (std of tick-to-tick price changes, last 500 ticks)
-
-    Both are computed from the 500 trades (ticks) immediately preceding each block trade in
-    the full tick stream — not from the full day or a fixed time window.
-
-    Unchanged features:
-      dollar_value, log_dollar_value, participation_rate (still uses trailing 1-min volume),
-      time_of_day, exchange_id, day_of_week
-
-    Target: impact_vwap_bps (signed)
+    Replaces the daily roll spread and 1-min volatility from v1 with 500-trade rolling
+    estimates computed from the tick stream immediately preceding each block. Everything
+    else (dollar_value, participation_rate, time_of_day, exchange_id) is unchanged.
 
     Output: data/lit_buy_features_v2.parquet
     """
 
-    # ── Config ─────────────────────────────────────────────────────────────────────
     DARK_IDS   = {4, 6, 16, 62, 201, 202, 203}
     ONE_MIN_NS = 60 * 1_000_000_000
     AAPL_MID   = 190.0
@@ -59,7 +46,7 @@ def run_build_lit_buy_features_v2():
     buys = buys.sort_values(["date", "timestamp_ns"]).reset_index(drop=True)
     print(f"{len(buys):,} AAPL lit buy block trades across {buys['date'].nunique()} days")
 
-    # ── 2. time_of_day (seconds since 9:30 ET) ───────────────────────────────────
+    # time_of_day in seconds since 9:30 ET
     et_times = (
         pd.to_datetime(buys["timestamp_ns"], unit="ns", utc=True)
         .dt.tz_convert("America/New_York")
@@ -71,10 +58,10 @@ def run_build_lit_buy_features_v2():
         - OPEN_SEC
     )
 
-    # ── 3. day_of_week ────────────────────────────────────────────────────────────
+    # day_of_week
     buys["day_of_week"] = pd.to_datetime(buys["date"]).dt.dayofweek
 
-    # ── 4. Per-day: compute rolling 500-trade features + trailing 1-min volume ────
+    # per-day: rolling 500-trade features + trailing 1-min volume
     roll_spread_arr = np.full(len(buys), np.nan)
     roll_vol_arr    = np.full(len(buys), np.nan)
     trail_vol_arr   = np.full(len(buys), np.nan)
@@ -157,13 +144,13 @@ def run_build_lit_buy_features_v2():
     buys["roll_vol_500"]       = roll_vol_arr
     buys["trail_1min_volume"]  = trail_vol_arr
 
-    # ── 5. participation_rate ─────────────────────────────────────────────────────
+    # participation_rate = block DV / trailing 1-min DV
     buys["participation_rate"] = buys["size"] / buys["trail_1min_volume"]
 
-    # ── 6. Derived features ───────────────────────────────────────────────────────
+    # derived features
     buys["log_dollar_value"] = np.log(buys["dollar_value"])
 
-    # ── 7. Assemble final feature table ───────────────────────────────────────────
+    # assemble feature table
     FEATURES = [
         "dollar_value",
         "log_dollar_value",
@@ -179,7 +166,7 @@ def run_build_lit_buy_features_v2():
     buys = buys.rename(columns={"exchange": "exchange_id"})
     feat_df = buys[["date"] + FEATURES + [TARGET]].copy()
 
-    # ── 8. Drop rows missing any feature or target ────────────────────────────────
+    # drop rows missing any feature or target
     n_raw = len(feat_df)
     feat_df = feat_df.dropna(subset=FEATURES + [TARGET])
     feat_df = feat_df[feat_df["participation_rate"] <= 1.0].copy()
@@ -189,12 +176,12 @@ def run_build_lit_buy_features_v2():
 
     print(f"\nRows: {n_raw:,} raw -> {len(feat_df):,} after dropping NaN/invalid")
 
-    # ── 9. Save ───────────────────────────────────────────────────────────────────
+    # save
     out_path = "data/lit_buy_features_v2.parquet"
     feat_df.to_parquet(out_path, index=False, compression="snappy")
     print(f"Saved -> {out_path}")
 
-    # ── 10. Summary stats ─────────────────────────────────────────────────────────
+    # summary stats
     print(f"\n{'='*60}")
     print(f"Shape: {feat_df.shape}  ({feat_df.shape[0]:,} rows x {feat_df.shape[1]} cols)")
     print(f"{'='*60}")
@@ -231,7 +218,7 @@ def run_build_lit_buy_sep():
     WINDOW     = 500
     MIN_TICKS  = 10
 
-    # ── Load September AAPL lit buy block trades ───────────────────────────────────
+    # load September AAPL lit buy block trades
     bt = pd.read_parquet(
         "data/block_trades.parquet",
         columns=["ticker", "date", "timestamp_ns", "price", "size",
@@ -251,7 +238,7 @@ def run_build_lit_buy_sep():
     buys = buys.sort_values(["date", "timestamp_ns"]).reset_index(drop=True)
     print(f"{len(buys):,} AAPL lit buy block trades in September across {buys['date'].nunique()} days")
 
-    # ── time_of_day ────────────────────────────────────────────────────────────────
+    # time_of_day in seconds since 9:30 ET
     et_times = (
         pd.to_datetime(buys["timestamp_ns"], unit="ns", utc=True)
         .dt.tz_convert("America/New_York")
@@ -260,10 +247,10 @@ def run_build_lit_buy_sep():
         et_times.dt.hour * 3600 + et_times.dt.minute * 60 + et_times.dt.second - OPEN_SEC
     )
 
-    # ── day_of_week ────────────────────────────────────────────────────────────────
+    # day_of_week
     buys["day_of_week"] = pd.to_datetime(buys["date"]).dt.dayofweek
 
-    # ── Rolling 500-trade features + trailing 1-min volume ────────────────────────
+    # rolling 500-trade features + trailing 1-min volume
     roll_spread_arr = np.full(len(buys), np.nan)
     roll_vol_arr    = np.full(len(buys), np.nan)
     trail_vol_arr   = np.full(len(buys), np.nan)
@@ -375,7 +362,7 @@ def run_build_coin_features():
     Also prints summary stats and side-by-side comparison with AAPL.
     """
 
-    # ── Config ─────────────────────────────────────────────────────────────────────
+    # config
     DARK_IDS   = {4, 6, 16, 62, 201, 202, 203}
     ONE_MIN_NS = 60 * 1_000_000_000
     COIN_MID   = 222.0     # approximate mid-price for COIN over Jun-Sep 2024
@@ -383,7 +370,7 @@ def run_build_coin_features():
     WINDOW     = 500
     MIN_TICKS  = 10
 
-    # ── 1. Load COIN block trades (all dates) ──────────────────────────────────────
+    # load COIN block trades
     bt = pd.read_parquet(
         "data/block_trades.parquet",
         columns=["ticker", "date", "timestamp_ns", "price", "size",
@@ -408,7 +395,7 @@ def run_build_coin_features():
     buys = buys.sort_values(["date", "timestamp_ns"]).reset_index(drop=True)
     print(f"\n{len(buys):,} COIN lit buy block trades across {buys['date'].nunique()} days")
 
-    # ── 2. time_of_day (seconds since 9:30 ET) ─────────────────────────────────────
+    # time_of_day in seconds since 9:30 ET──
     et_times = (
         pd.to_datetime(buys["timestamp_ns"], unit="ns", utc=True)
         .dt.tz_convert("America/New_York")
@@ -420,10 +407,10 @@ def run_build_coin_features():
         - OPEN_SEC
     )
 
-    # ── 3. day_of_week ──────────────────────────────────────────────────────────────
+    # day_of_week──
     buys["day_of_week"] = pd.to_datetime(buys["date"]).dt.dayofweek
 
-    # ── 4. Per-day: compute rolling 500-trade features + trailing 1-min volume ──────
+    # per-day: rolling 500-trade features + trailing 1-min volume──
     roll_spread_arr = np.full(len(buys), np.nan)
     roll_vol_arr    = np.full(len(buys), np.nan)
     trail_vol_arr   = np.full(len(buys), np.nan)
@@ -491,13 +478,13 @@ def run_build_coin_features():
     buys["roll_vol_500"]       = roll_vol_arr
     buys["trail_1min_volume"]  = trail_vol_arr
 
-    # ── 5. participation_rate ───────────────────────────────────────────────────────
+    # participation_rate = block DV / trailing 1-min DV──
     buys["participation_rate"] = buys["size"] / buys["trail_1min_volume"]
 
-    # ── 6. Derived features ────────────────────────────────────────────────────────
+    # derived features─
     buys["log_dollar_value"] = np.log(buys["dollar_value"])
 
-    # ── 7. Assemble final feature table ────────────────────────────────────────────
+    # assemble feature table
     FEATURES = [
         "dollar_value",
         "log_dollar_value",
@@ -513,7 +500,7 @@ def run_build_coin_features():
     buys = buys.rename(columns={"exchange": "exchange_id"})
     feat_df = buys[["date"] + FEATURES + [TARGET]].copy()
 
-    # ── 8. Drop rows missing any feature or target ─────────────────────────────────
+    # drop rows missing any feature or target
     n_raw = len(feat_df)
     feat_df = feat_df.dropna(subset=FEATURES + [TARGET])
     feat_df = feat_df[feat_df["participation_rate"] <= 1.0].copy()
@@ -523,7 +510,7 @@ def run_build_coin_features():
 
     print(f"\nRows: {n_raw:,} raw -> {len(feat_df):,} after dropping NaN/invalid")
 
-    # ── 9. Split into train (Jun-Aug) and test (Sep) ──────────────────────────────
+    # train/test split: Jun-Aug vs Sep
     train_df = feat_df[feat_df["date"] < "2024-09-01"].copy().reset_index(drop=True)
     test_df  = feat_df[feat_df["date"] >= "2024-09-01"].copy().reset_index(drop=True)
 
@@ -534,7 +521,7 @@ def run_build_coin_features():
     print(f"Saved -> {train_path}  ({len(train_df):,} rows)")
     print(f"Saved -> {test_path}   ({len(test_df):,} rows)")
 
-    # ── 10. Summary stats ─────────────────────────────────────────────────────────
+    # summary stats
     def print_split_stats(label, df):
         abs_imp = df["impact_vwap_bps"].abs()
         print(f"\n  {label}:")
@@ -552,8 +539,7 @@ def run_build_coin_features():
     print_split_stats("Train (Jan-Aug 2024)", train_df)
     print_split_stats("Test  (Sep 2024)",     test_df)
 
-    # ── 11. Side-by-side comparison with AAPL ──────────────────────────────────────
-    # Load AAPL feature data
+    # side-by-side comparison with AAPL
     aapl_tr = pd.read_parquet("data/lit_buy_features_v2.parquet")
     aapl_te = pd.read_parquet("data/lit_buy_features_v2_sep.parquet")
 

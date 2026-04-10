@@ -1,15 +1,7 @@
 """
-OLS baseline models consolidated.
-
-Functions:
-  run_ols_fit_visualization()    - OLS fit + residual diagnostics (signed impact, AAPL & COIN)
-  run_ols_fitted_line()          - Scatter of |slippage| vs spread with OLS line
-  run_ols_unsigned_by_feature()  - |slippage| scatter panels rotating over features
-  run_ols_unsigned_diagnostics() - QQ plots, partial dependence, error by regime
-  run_ols_unsigned_visualization() - OLS fit + residuals + predicted-vs-actual (6 features)
-  run_coin_signed_ols_plot()     - COIN signed OLS scatter (tick-test filtered)
-  run_coin_no_ticktest_ols()     - COIN signed OLS scatter (no tick-test filter)
-  run_temporal_holdout()         - True temporal holdout: OLS/LAD/XGB/Semipar comparison
+OLS baselines for signed and absolute slippage on AAPL and COIN. Includes residual
+diagnostics, scatter plots across features, and a temporal holdout that compares
+OLS/LAD/XGB/semiparametric side by side.
 """
 
 import os
@@ -29,7 +21,7 @@ from xgboost import XGBRegressor
 from sklearn.model_selection import GridSearchCV
 
 
-# =============================================================================
+# =
 def run_ols_fit_visualization():
     """
     OLS fit visualizations for AAPL and COIN lit buy block trades.
@@ -47,9 +39,7 @@ def run_ols_fit_visualization():
       aapl_coin_ols_fit.png
       aapl_coin_ols_predicted_vs_actual.png
     """
-    # ══════════════════════════════════════════════════════════════════════════════
     # Load data
-    # ══════════════════════════════════════════════════════════════════════════════
     aapl_tr = pd.read_parquet("data/lit_buy_features_v2.parquet")
     aapl_te = pd.read_parquet("data/lit_buy_features_v2_sep.parquet")
     coin_tr = pd.read_parquet("data/coin_lit_buy_features_train.parquet")
@@ -58,9 +48,7 @@ def run_ols_fit_visualization():
     print(f"AAPL train: {len(aapl_tr):,}  test: {len(aapl_te):,}")
     print(f"COIN train: {len(coin_tr):,}  test: {len(coin_te):,}")
 
-    # ══════════════════════════════════════════════════════════════════════════════
     # OLS helper — univariate: impact_vwap_bps = c1 * spread + c2
-    # ══════════════════════════════════════════════════════════════════════════════
     def ols_univariate(x_train, y_train, x_test, y_test):
         """Fit OLS on train, evaluate on both train and test."""
         X_tr = np.column_stack([x_train, np.ones(len(x_train))])
@@ -87,9 +75,7 @@ def run_ols_fit_visualization():
             "mae_te": np.mean(np.abs(y_test - yhat_te)),
         }
 
-    # ══════════════════════════════════════════════════════════════════════════════
     # Fit OLS for both tickers — signed impact
-    # ══════════════════════════════════════════════════════════════════════════════
     aapl_fit = ols_univariate(
         aapl_tr["roll_spread_500"].values, aapl_tr["impact_vwap_bps"].values,
         aapl_te["roll_spread_500"].values, aapl_te["impact_vwap_bps"].values,
@@ -105,9 +91,7 @@ def run_ols_fit_visualization():
         print(f"  Train R2={fit['r2_tr']:.4f}  MAE={fit['mae_tr']:.4f}")
         print(f"  Test  R2={fit['r2_te']:+.4f}  MAE={fit['mae_te']:.4f}")
 
-    # ══════════════════════════════════════════════════════════════════════════════
     # FIGURE 1: Scatter + OLS line + residuals (2x2 grid)
-    # ══════════════════════════════════════════════════════════════════════════════
     fig = plt.figure(figsize=(18, 14))
     gs = gridspec.GridSpec(2, 2, figure=fig, hspace=0.35, wspace=0.28)
 
@@ -123,7 +107,7 @@ def run_ols_fit_visualization():
         y_te = df_te["impact_vwap_bps"].values
         b = fit["beta"]
 
-        # ── Top panel: scatter + OLS line ─────────────────────────────────────
+        # Top panel: scatter + OLS line
         ax = fig.add_subplot(gs[0, col])
 
         # Subsample train for visibility (plot at most 4000 points)
@@ -173,7 +157,7 @@ def run_ols_fit_visualization():
         margin = (y_hi - y_lo) * 0.1
         ax.set_ylim(y_lo - margin, y_hi + margin)
 
-        # ── Bottom panel: residual analysis ───────────────────────────────────
+        # Bottom panel: residual analysis
         ax_bot = fig.add_subplot(gs[1, col])
 
         # Residuals vs fitted (train)
@@ -229,9 +213,7 @@ def run_ols_fit_visualization():
     plt.savefig("aapl_coin_ols_fit.png", dpi=150, bbox_inches="tight")
     print("\nSaved -> aapl_coin_ols_fit.png")
 
-    # ══════════════════════════════════════════════════════════════════════════════
     # FIGURE 2: Predicted vs actual + residual histogram (2x2)
-    # ══════════════════════════════════════════════════════════════════════════════
     fig2 = plt.figure(figsize=(18, 14))
     gs2 = gridspec.GridSpec(2, 2, figure=fig2, hspace=0.35, wspace=0.28)
 
@@ -239,7 +221,7 @@ def run_ols_fit_visualization():
         y_tr = df_tr["impact_vwap_bps"].values
         y_te = df_te["impact_vwap_bps"].values
 
-        # ── Top panel: predicted vs actual (test set) ─────────────────────────
+        # Top panel: predicted vs actual (test set)
         ax = fig2.add_subplot(gs2[0, col])
         ax.scatter(y_te, fit["yhat_te"], s=12, alpha=0.3, color=color,
                    edgecolors="none", zorder=2)
@@ -280,7 +262,7 @@ def run_ols_fit_visualization():
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
 
-        # ── Bottom panel: residual histogram (train + test overlay) ───────────
+        # Bottom panel: residual histogram (train + test overlay)
         ax_h = fig2.add_subplot(gs2[1, col])
 
         resid_tr = fit["resid_tr"]
@@ -335,7 +317,7 @@ def run_ols_fit_visualization():
     print("Saved -> aapl_coin_ols_predicted_vs_actual.png")
 
 
-# =============================================================================
+# =
 def run_ols_fitted_line():
     """
     Scatter of |slippage| vs Roll Estimated Spread with OLS line.
@@ -399,7 +381,7 @@ def run_ols_fitted_line():
     print("Saved -> ols_fitted_line.png")
 
 
-# =============================================================================
+# =
 def run_ols_unsigned_by_feature():
     """
     OLS |slippage| scatter plots rotating over features as x-axis.
@@ -513,7 +495,7 @@ def run_ols_unsigned_by_feature():
     print("\nDone!")
 
 
-# =============================================================================
+# =
 def run_ols_unsigned_diagnostics():
     """
     Additional unsigned OLS diagnostics and visualizations.
@@ -537,7 +519,7 @@ def run_ols_unsigned_diagnostics():
     }
     COLORS = {"AAPL": "#2563eb", "COIN": "#dc2626"}
 
-    # -- Load and fit --------------------------------------------------------------
+    # Load and fit
     datasets = {
         "AAPL": ("data/lit_buy_features_v2.parquet", "data/lit_buy_features_v2_sep.parquet"),
         "COIN": ("data/coin_lit_buy_features_train.parquet", "data/coin_lit_buy_features_test.parquet"),
@@ -569,9 +551,7 @@ def run_ols_unsigned_diagnostics():
 
     rng = np.random.default_rng(42)
 
-    # =============================================================================
     # Figure 1: QQ plots — Normal vs Laplace (test residuals)
-    # =============================================================================
     print("Plotting QQ residuals...", flush=True)
 
     fig1, axes1 = plt.subplots(2, 2, figsize=(16, 14))
@@ -585,7 +565,7 @@ def run_ols_unsigned_diagnostics():
         n = len(resid_sorted)
         probs = (np.arange(1, n + 1) - 0.5) / n
 
-        # -- Normal QQ --
+        # Normal QQ
         ax = axes1[0, col]
         norm_quant = stats.norm.ppf(probs, loc=resid.mean(), scale=resid.std())
         ax.scatter(norm_quant, resid_sorted, s=4, alpha=0.3, color=color, edgecolors="none")
@@ -602,7 +582,7 @@ def run_ols_unsigned_diagnostics():
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
 
-        # -- Laplace QQ --
+        # Laplace QQ
         ax2 = axes1[1, col]
         loc_l, b_l = stats.laplace.fit(resid)
         lap_quant = stats.laplace.ppf(probs, loc=loc_l, scale=b_l)
@@ -625,9 +605,7 @@ def run_ols_unsigned_diagnostics():
     plt.savefig("ols_unsigned_qq_residuals.png", dpi=150, bbox_inches="tight")
     print("Saved -> ols_unsigned_qq_residuals.png")
 
-    # =============================================================================
     # Figure 2: Partial dependence — marginal effect of each feature
-    # =============================================================================
     print("Plotting partial dependence...", flush=True)
 
     fig2, axes2 = plt.subplots(2, 3, figsize=(22, 13))
@@ -681,9 +659,7 @@ def run_ols_unsigned_diagnostics():
     plt.savefig("ols_unsigned_partial_dependence.png", dpi=150, bbox_inches="tight")
     print("Saved -> ols_unsigned_partial_dependence.png")
 
-    # =============================================================================
     # Figure 3: Error by trade size regime + temporal MAE
-    # =============================================================================
     print("Plotting error by regime...", flush=True)
 
     fig3, axes3 = plt.subplots(2, 2, figsize=(18, 14))
@@ -696,7 +672,7 @@ def run_ols_unsigned_diagnostics():
         df_te = f["df_te"]
         color = COLORS[ticker]
 
-        # -- Top: MAE by trade size tercile ----------------------------------------
+        # Top: MAE by trade size tercile
         ax = axes3[0, col]
         dv = df_te["dollar_value"].values
         terciles = pd.qcut(dv, q=3, labels=["Small", "Medium", "Large"])
@@ -722,7 +698,7 @@ def run_ols_unsigned_diagnostics():
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
 
-        # -- Bottom: MAE by volatility regime --------------------------------------
+        # Bottom: MAE by volatility regime
         ax2 = axes3[1, col]
         vol = df_te["roll_vol_500"].values
         vol_terciles = pd.qcut(vol, q=3, labels=["Low Vol", "Med Vol", "High Vol"])
@@ -760,7 +736,7 @@ def run_ols_unsigned_diagnostics():
     print("\nDone!")
 
 
-# =============================================================================
+# =
 def run_ols_unsigned_visualization():
     """
     OLS regression visualizations for unsigned slippage: abs(impact_vwap_bps).
@@ -776,7 +752,7 @@ def run_ols_unsigned_visualization():
         "roll_spread_500", "roll_vol_500", "exchange_id",
     ]
 
-    # -- Load data ----------------------------------------------------------------
+    # Load data
     datasets = {
         "AAPL": ("data/lit_buy_features_v2.parquet", "data/lit_buy_features_v2_sep.parquet"),
         "COIN": ("data/coin_lit_buy_features_train.parquet", "data/coin_lit_buy_features_test.parquet"),
@@ -822,9 +798,7 @@ def run_ols_unsigned_visualization():
     COLORS = {"AAPL": "#2563eb", "COIN": "#dc2626"}
     rng = np.random.default_rng(42)
 
-    # =============================================================================
     # Figure 1: Scatter (slippage vs roll_spread) + Residuals vs Fitted (2x2)
-    # =============================================================================
     fig1 = plt.figure(figsize=(18, 14))
     gs1 = gridspec.GridSpec(2, 2, figure=fig1, hspace=0.35, wspace=0.28)
 
@@ -834,7 +808,7 @@ def run_ols_unsigned_visualization():
         spread_tr = t["df_tr"]["roll_spread_500"].values
         spread_te = t["df_te"]["roll_spread_500"].values
 
-        # -- Top: scatter + OLS trend line (slippage vs spread) --------------------
+        # Top: scatter + OLS trend line (slippage vs spread)
         ax = fig1.add_subplot(gs1[0, col])
 
         n_plot = min(4000, len(spread_tr))
@@ -879,7 +853,7 @@ def run_ols_unsigned_visualization():
         y_lo, y_hi = np.percentile(all_y, [0, 98])
         ax.set_ylim(max(y_lo - 0.5, 0), y_hi * 1.1)
 
-        # -- Bottom: residuals vs fitted (train) -----------------------------------
+        # Bottom: residuals vs fitted (train)
         ax_bot = fig1.add_subplot(gs1[1, col])
 
         resid = t["resid_tr"]
@@ -927,9 +901,7 @@ def run_ols_unsigned_visualization():
     plt.savefig("ols_unsigned_fit.png", dpi=150, bbox_inches="tight")
     print("Saved -> ols_unsigned_fit.png")
 
-    # =============================================================================
     # Figure 2: Predicted vs Actual + Residual Histograms (2x2)
-    # =============================================================================
     fig2 = plt.figure(figsize=(18, 14))
     gs2 = gridspec.GridSpec(2, 2, figure=fig2, hspace=0.35, wspace=0.28)
 
@@ -939,7 +911,7 @@ def run_ols_unsigned_visualization():
         y_te = t["y_te"]
         yhat_te = t["yhat_te"]
 
-        # -- Top: predicted vs actual (test) ---------------------------------------
+        # Top: predicted vs actual (test)
         ax = fig2.add_subplot(gs2[0, col])
         ax.scatter(y_te, yhat_te, s=12, alpha=0.3, color=color,
                    edgecolors="none", zorder=2)
@@ -977,7 +949,7 @@ def run_ols_unsigned_visualization():
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
 
-        # -- Bottom: residual histogram (train + test overlay) ---------------------
+        # Bottom: residual histogram (train + test overlay)
         ax_h = fig2.add_subplot(gs2[1, col])
         resid_tr = t["resid_tr"]
         resid_te = t["resid_te"]
@@ -1030,7 +1002,7 @@ def run_ols_unsigned_visualization():
     print("\nDone!")
 
 
-# =============================================================================
+# =
 def run_coin_signed_ols_plot():
     """COIN signed OLS scatter (tick-test filtered). Output: coin_signed_ols.png"""
     # Load data
@@ -1084,14 +1056,14 @@ def run_coin_signed_ols_plot():
     print("Saved -> coin_signed_ols.png")
 
 
-# =============================================================================
+# =
 def run_coin_no_ticktest_ols():
     """
     Same as coin_signed_ols_plot.py but WITHOUT tick-test filtering.
     Uses ALL COIN lit block trades (buy + sell + unknown), raw impact_vwap_bps.
     Output: coin_no_ticktest_ols.png
     """
-    # ── Config (same as build_coin_features.py) ──────────────────────────────────
+    # Config (same as build_coin_features.py)
     DARK_IDS   = {4, 6, 16, 62, 201, 202, 203}
     COIN_MID   = 222.0
     WINDOW     = 500
@@ -1107,7 +1079,7 @@ def run_coin_no_ticktest_ols():
             return 2.0 * np.sqrt(-cov1)
         return np.nan
 
-    # ── 1. Load ALL COIN lit block trades (no tick-test filter) ──────────────────
+    # 1. Load ALL COIN lit block trades (no tick-test filter)
     bt = pd.read_parquet(
         "data/block_trades.parquet",
         columns=["ticker", "date", "timestamp_ns", "price", "size",
@@ -1123,7 +1095,7 @@ def run_coin_no_ticktest_ols():
     trades = trades.sort_values(["date", "timestamp_ns"]).reset_index(drop=True)
     print(f"COIN lit block trades (all sides): {len(trades):,}")
 
-    # ── 2. Compute roll_spread_500 for each trade ───────────────────────────────
+    # 2. Compute roll_spread_500 for each trade
     roll_spread_arr = np.full(len(trades), np.nan)
 
     days_processed = 0
@@ -1157,7 +1129,7 @@ def run_coin_no_ticktest_ols():
 
     trades["roll_spread_500"] = roll_spread_arr
 
-    # ── 3. Drop NaN, split train/test ───────────────────────────────────────────
+    # 3. Drop NaN, split train/test
     feat = trades.dropna(subset=["roll_spread_500", "impact_vwap_bps"]).copy()
     feat = feat.reset_index(drop=True)
     print(f"Rows after dropping NaN: {len(feat):,}")
@@ -1166,7 +1138,7 @@ def run_coin_no_ticktest_ols():
     test  = feat[feat["date"] >= "2024-09-01"].reset_index(drop=True)
     print(f"Train: {len(train):,}  Test: {len(test):,}")
 
-    # ── 4. OLS fit ───────────────────────────────────────────────────────────────
+    # 4. OLS fit
     x_tr = train["roll_spread_500"].values.astype(np.float64)
     y_tr = train["impact_vwap_bps"].values.astype(np.float64)
     x_te = test["roll_spread_500"].values.astype(np.float64)
@@ -1176,7 +1148,7 @@ def run_coin_no_ticktest_ols():
     beta, *_ = np.linalg.lstsq(X_tr, y_tr, rcond=None)
     print(f"OLS: impact = {beta[0]:+.4f} * spread {beta[1]:+.4f}")
 
-    # ── 5. Plot (same style/zoom as coin_signed_ols_plot.py) ─────────────────────
+    # 5. Plot (same style/zoom as coin_signed_ols_plot.py)
     fig, ax = plt.subplots(figsize=(10, 6.5))
 
     rng = np.random.default_rng(42)
@@ -1214,7 +1186,7 @@ def run_coin_no_ticktest_ols():
     print("Saved -> coin_no_ticktest_ols.png")
 
 
-# =============================================================================
+# =
 def run_temporal_holdout():
     """
     True temporal holdout evaluation.
@@ -1238,7 +1210,7 @@ def run_temporal_holdout():
 
     Output: aapl_temporal_holdout.png
     """
-    # ── Load training and test sets ────────────────────────────────────────────────
+    # Load training and test sets
     df_tr = pd.read_parquet("data/lit_buy_features_v2.parquet")
     df_te = pd.read_parquet("data/lit_buy_features_v2_sep.parquet")
 
@@ -1250,7 +1222,7 @@ def run_temporal_holdout():
     print(f"Test : {len(df_te):,} trades  |  {df_te['date'].nunique()} days  "
           f"({df_te['date'].min()} .. {df_te['date'].max()})")
 
-    # ── Feature arrays ─────────────────────────────────────────────────────────────
+    # Feature arrays
     def make_arrays(df):
         spread = df["roll_spread_500"].to_numpy(dtype=np.float64)
         vol    = df["roll_vol_500"].to_numpy(dtype=np.float64)
@@ -1264,7 +1236,7 @@ def run_temporal_holdout():
     sp_tr, vo_tr, pr_tr, y_tr, Xlad_tr, Xfull_tr, Xres_tr = make_arrays(df_tr)
     sp_te, vo_te, pr_te, y_te, Xlad_te, Xfull_te, Xres_te = make_arrays(df_te)
 
-    # ── Metric helpers ─────────────────────────────────────────────────────────────
+    # Metric helpers
     def r2(ytrue, ypred):
         ss_res = ((ytrue - ypred) ** 2).sum()
         ss_tot = ((ytrue - ytrue.mean()) ** 2).sum()
@@ -1273,7 +1245,7 @@ def run_temporal_holdout():
     def mae(ytrue, ypred):
         return np.mean(np.abs(ytrue - ypred))
 
-    # ── XGBoost grid ──────────────────────────────────────────────────────────────
+    # XGBoost grid
     PARAM_GRID = {
         "max_depth":        [2, 3],
         "n_estimators":     [50, 100, 200],
@@ -1296,7 +1268,7 @@ def run_temporal_holdout():
             gs.fit(X_tr, y_tr)
         return gs.best_estimator_, gs.best_params_
 
-    # ── (1) OLS-Uni ───────────────────────────────────────────────────────────────
+    # (1) OLS-Uni
     print("\n--- Fitting OLS-Uni ---")
     beta_ols, *_ = np.linalg.lstsq(Xlad_tr, y_tr, rcond=None)
     pred_ols     = np.maximum(Xlad_te @ beta_ols, 0.0)
@@ -1304,7 +1276,7 @@ def run_temporal_holdout():
     print(f"  c1={beta_ols[0]:+.5f}  c2={beta_ols[1]:+.5f}  "
           f"OOS R2={r2_ols:+.4f}  MAE={mae_ols:.4f}")
 
-    # ── (2) LAD-Uni ───────────────────────────────────────────────────────────────
+    # (2) LAD-Uni
     print("--- Fitting LAD-Uni ---")
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -1316,21 +1288,21 @@ def run_temporal_holdout():
     print(f"  c1={beta_lad[0]:+.5f}  c2={beta_lad[1]:+.5f}  "
           f"OOS R2={r2_lad:+.4f}  MAE={mae_lad:.4f}")
 
-    # ── (3) XGB-MSE ───────────────────────────────────────────────────────────────
+    # (3) XGB-MSE
     print("--- Fitting XGB-MSE (GridSearchCV 3-fold) ---")
     xgb_mse, params_mse = fit_xgb_gs(Xfull_tr, y_tr, "reg:squarederror")
     pred_mse = np.maximum(xgb_mse.predict(Xfull_te), 0.0)
     r2_mse, mae_mse = r2(y_te, pred_mse), mae(y_te, pred_mse)
     print(f"  best={params_mse}  OOS R2={r2_mse:+.4f}  MAE={mae_mse:.4f}")
 
-    # ── (4) XGB-MAE ───────────────────────────────────────────────────────────────
+    # (4) XGB-MAE
     print("--- Fitting XGB-MAE (GridSearchCV 3-fold) ---")
     xgb_mae, params_mae = fit_xgb_gs(Xfull_tr, y_tr, "reg:absoluteerror")
     pred_mae = np.maximum(xgb_mae.predict(Xfull_te), 0.0)
     r2_mae, mae_mae = r2(y_te, pred_mae), mae(y_te, pred_mae)
     print(f"  best={params_mae}  OOS R2={r2_mae:+.4f}  MAE={mae_mae:.4f}")
 
-    # ── (5) Semipar-MAE ──────────────────────────────────────────────────────────
+    # (5) Semipar-MAE
     print("--- Fitting Semipar-MAE ---")
     resid_tr = y_tr - lad_pred_tr
     xgb_res, params_res = fit_xgb_gs(Xres_tr, resid_tr, "reg:absoluteerror")
@@ -1339,7 +1311,7 @@ def run_temporal_holdout():
     r2_semi, mae_semi = r2(y_te, pred_semi), mae(y_te, pred_semi)
     print(f"  best={params_res}  OOS R2={r2_semi:+.4f}  MAE={mae_semi:.4f}")
 
-    # ── Summary ───────────────────────────────────────────────────────────────────
+    # Summary
     MODEL_NAMES  = ["OLS-Uni", "LAD-Uni", "XGB-MSE", "XGB-MAE", "Semipar-MAE"]
     OOS_R2       = [r2_ols, r2_lad, r2_mse, r2_mae, r2_semi]
     OOS_MAE      = [mae_ols, mae_lad, mae_mse, mae_mae, mae_semi]
@@ -1362,7 +1334,7 @@ def run_temporal_holdout():
     print(f"  Test abs_impact: mean={y_te.mean():.4f}  std={y_te.std():.4f}  "
           f"median={np.median(y_te):.4f}")
 
-    # ── Plot ───────────────────────────────────────────────────────────────────────
+    # Plot
     COLORS = ["#2563eb", "#16a34a", "#7c3aed", "#dc2626", "#f59e0b"]
 
     fig = plt.figure(figsize=(18, 10))
@@ -1376,7 +1348,7 @@ def run_temporal_holdout():
 
     xpos = np.arange(5)
 
-    # ── Panel 1: OOS R² bars ──────────────────────────────────────────────────────
+    # Panel 1: OOS R² bars
     bars1 = ax1.bar(xpos, OOS_R2, color=COLORS, width=0.55,
                     edgecolor="white", linewidth=0.8)
     for bar, v in zip(bars1, OOS_R2):
@@ -1391,7 +1363,7 @@ def run_temporal_holdout():
     ax1.grid(True, axis="y", alpha=0.2)
     ax1.spines["top"].set_visible(False); ax1.spines["right"].set_visible(False)
 
-    # ── Panel 2: OOS MAE bars ─────────────────────────────────────────────────────
+    # Panel 2: OOS MAE bars
     bars2 = ax2.bar(xpos, OOS_MAE, color=COLORS, width=0.55,
                     edgecolor="white", linewidth=0.8)
     for bar, v in zip(bars2, OOS_MAE):
@@ -1403,7 +1375,7 @@ def run_temporal_holdout():
     ax2.grid(True, axis="y", alpha=0.2)
     ax2.spines["top"].set_visible(False); ax2.spines["right"].set_visible(False)
 
-    # ── Panel 3: spread distribution train vs test ────────────────────────────────
+    # Panel 3: spread distribution train vs test
     clip_sp = np.percentile(np.concatenate([sp_tr, sp_te]), 99)
     ax3.hist(np.clip(sp_tr, 0, clip_sp), bins=60, density=True,
              color="#2563eb", alpha=0.5, label=f"Train Jun-Aug (n={len(sp_tr):,})")
@@ -1417,7 +1389,7 @@ def run_temporal_holdout():
     ax3.grid(True, alpha=0.18)
     ax3.spines["top"].set_visible(False); ax3.spines["right"].set_visible(False)
 
-    # ── Panel 4: Predicted vs actual for best MAE model ──────────────────────────
+    # Panel 4: Predicted vs actual for best MAE model
     best_name = MODEL_NAMES[np.argmin(OOS_MAE)]
     best_pred = ALL_PREDS[np.argmin(OOS_MAE)]
     best_color = COLORS[np.argmin(OOS_MAE)]
@@ -1438,7 +1410,7 @@ def run_temporal_holdout():
     ax4.grid(True, alpha=0.18)
     ax4.spines["top"].set_visible(False); ax4.spines["right"].set_visible(False)
 
-    # ── Panel 5: Absolute error distributions (violin) ────────────────────────────
+    # Panel 5: Absolute error distributions (violin)
     abs_errs = [np.abs(y_te - p) for p in ALL_PREDS]
     clip_e   = np.percentile(abs_errs[0], 97)
     vdata    = [np.clip(e, 0, clip_e) for e in abs_errs]
@@ -1458,7 +1430,7 @@ def run_temporal_holdout():
     ax5.grid(True, axis="y", alpha=0.2)
     ax5.spines["top"].set_visible(False); ax5.spines["right"].set_visible(False)
 
-    # ── Panel 6: MAE by September date ────────────────────────────────────────────
+    # Panel 6: MAE by September date
     dates_te  = df_te["date"].to_numpy()
     sep_dates = sorted(set(dates_te))
     w = 0.14
@@ -1490,7 +1462,7 @@ def run_temporal_holdout():
     print("\nsaved -> aapl_temporal_holdout.png")
 
 
-# =============================================================================
+# =
 if __name__ == "__main__":
     run_ols_fit_visualization()
     run_ols_fitted_line()

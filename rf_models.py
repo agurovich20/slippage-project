@@ -1,12 +1,7 @@
 """
-Random Forest models consolidated.
-
-Functions:
-  run_rf_holdout()        - RF-MSE and RF-MAE holdout evaluation vs OLS/XGB baselines
-  run_rf_lad_analysis()   - SHAP, feature importance, residuals for RF LAD model
-  run_rf_mse_analysis()   - SHAP, feature importance, residuals for RF MSE model
-  run_rf_mse_nonlinear()  - PDP, ICE, SHAP interactions, non-linearity analysis
-  run_regen_rf_plot()     - Regenerate RF grid search plot from saved CSV
+Random Forest slippage models — holdout evaluation, SHAP/feature importance, and
+non-linearity analysis for both MSE and LAD objectives. The ICE curves here were
+the clearest evidence of RF overfitting.
 """
 
 import os
@@ -29,7 +24,7 @@ from sklearn.model_selection import GridSearchCV, TimeSeriesSplit
 from sklearn.inspection import permutation_importance
 
 
-# =============================================================================
+# =
 def run_rf_holdout():
     """
     Random Forest on individual trades: abs(impact_vwap_bps) ~ spread + vol + prate.
@@ -59,7 +54,7 @@ def run_rf_holdout():
 
     Output: aapl_rf_holdout.png
     """
-    # ── Load data ──────────────────────────────────────────────────────────────────
+    # Load data
     tr_df = pd.read_parquet("data/lit_buy_features_v2.parquet")
     te_df = pd.read_parquet("data/lit_buy_features_v2_sep.parquet")
 
@@ -79,7 +74,7 @@ def run_rf_holdout():
     y_tr = tr_df["abs_impact"].to_numpy(dtype=np.float64)
     y_te = te_df["abs_impact"].to_numpy(dtype=np.float64)
 
-    # ── Metrics ────────────────────────────────────────────────────────────────────
+    # Metrics
     def r2(ytrue, ypred):
         ss_res = ((ytrue - ypred) ** 2).sum()
         ss_tot = ((ytrue - ytrue.mean()) ** 2).sum()
@@ -91,7 +86,7 @@ def run_rf_holdout():
     naive_mae = mae(y_te, np.full_like(y_te, y_te.mean()))
     print(f"\nNaive-mean baseline MAE={naive_mae:.4f}")
 
-    # ── Grids ──────────────────────────────────────────────────────────────────────
+    # Grids
     PARAM_GRID_MSE = {
         "n_estimators":      [100, 200, 500],
         "max_depth":         [3, 5, 8, 12, None],
@@ -167,7 +162,7 @@ def run_rf_holdout():
             "importances": importances,
         }
 
-    # ── Full comparison table ──────────────────────────────────────────────────────
+    # Full comparison table
     BASELINES = {
         "OLS-Uni": {"r2": +0.016, "mae": 1.772},
         "LAD-Uni": {"r2": -0.068, "mae": 1.530},
@@ -187,7 +182,7 @@ def run_rf_holdout():
         print(f"  {nm:<10}  {info['r2']:>+9.4f}  {info['mae']:>9.4f}  {delta:>+10.4f} bps")
     print(f"{'='*62}")
 
-    # ── Plot ───────────────────────────────────────────────────────────────────────
+    # Plot
     ALL_MODELS = ["OLS-Uni", "LAD-Uni", "XGB-MSE", "XGB-MAE", "RF-MSE", "RF-MAE"]
     ALL_COLORS = ["#94a3b8",  "#64748b",  "#7c3aed",  "#2563eb",  "#f59e0b",  "#dc2626"]
     ALL_R2S    = [BASELINES["OLS-Uni"]["r2"], BASELINES["LAD-Uni"]["r2"],
@@ -211,7 +206,7 @@ def run_rf_holdout():
 
     xpos = np.arange(len(ALL_MODELS))
 
-    # ── Panel 1: OOS R2 ───────────────────────────────────────────────────────────
+    # Panel 1: OOS R2
     bars1 = ax1.bar(xpos, ALL_R2S, color=ALL_COLORS, width=0.55,
                     edgecolor="white", linewidth=0.8)
     for bar, v in zip(bars1, ALL_R2S):
@@ -228,7 +223,7 @@ def run_rf_holdout():
     ax1.spines["top"].set_visible(False)
     ax1.spines["right"].set_visible(False)
 
-    # ── Panel 2: OOS MAE ──────────────────────────────────────────────────────────
+    # Panel 2: OOS MAE
     bars2 = ax2.bar(xpos, ALL_MAES, color=ALL_COLORS, width=0.55,
                     edgecolor="white", linewidth=0.8)
     for bar, v in zip(bars2, ALL_MAES):
@@ -247,7 +242,7 @@ def run_rf_holdout():
     ax2.spines["top"].set_visible(False)
     ax2.spines["right"].set_visible(False)
 
-    # ── Panel 3: Feature importances ──────────────────────────────────────────────
+    # Panel 3: Feature importances
     feat_x     = np.arange(len(FEATURES))
     feat_short = ["spread", "vol", "prate"]
     w = 0.35
@@ -271,7 +266,7 @@ def run_rf_holdout():
     ax3.spines["top"].set_visible(False)
     ax3.spines["right"].set_visible(False)
 
-    # ── Panel 4: Scatter predicted vs actual (best-MAE RF) ────────────────────────
+    # Panel 4: Scatter predicted vs actual (best-MAE RF)
     best_rf_label = "RF-MAE" if results["RF-MAE"]["mae"] <= results["RF-MSE"]["mae"] else "RF-MSE"
     best_pred_arr = results[best_rf_label]["pred"]
 
@@ -292,7 +287,7 @@ def run_rf_holdout():
     ax4.spines["top"].set_visible(False)
     ax4.spines["right"].set_visible(False)
 
-    # ── Panel 5: Violin of absolute errors ────────────────────────────────────────
+    # Panel 5: Violin of absolute errors
     abs_errs = [np.abs(y_te - rf_mse_pred), np.abs(y_te - rf_mae_pred)]
     vp = ax5.violinplot(abs_errs, positions=[0, 1], widths=0.5,
                         showmedians=True, showextrema=False)
@@ -314,7 +309,7 @@ def run_rf_holdout():
     ax5.spines["top"].set_visible(False)
     ax5.spines["right"].set_visible(False)
 
-    # ── Panel 6: Per-day MAE ──────────────────────────────────────────────────────
+    # Panel 6: Per-day MAE
     te_dates     = te_df["date"].to_numpy()
     unique_dates = sorted(np.unique(te_dates))
 
@@ -351,7 +346,7 @@ def run_rf_holdout():
     print("\nsaved -> aapl_rf_holdout.png")
 
 
-# =============================================================================
+# =
 def run_rf_lad_analysis():
     """
     SHAP, feature importance, and residual analytics for Random Forest LAD model.
@@ -362,7 +357,7 @@ def run_rf_lad_analysis():
 
     Output: aapl_rf_lad_analysis.png
     """
-    # -- Load data ----------------------------------------------------------------
+    # Load data
     df_tr = pd.read_parquet("data/lit_buy_features_v2.parquet")
     df_te = pd.read_parquet("data/lit_buy_features_v2_sep.parquet")
     df_tr["abs_impact"] = df_tr["impact_vwap_bps"].abs()
@@ -382,7 +377,7 @@ def run_rf_lad_analysis():
 
     print(f"Train: {len(df_tr):,}  |  Test: {len(df_te):,}")
 
-    # -- Train model --------------------------------------------------------------
+    # Train model
     BEST = dict(max_depth=20, n_estimators=200, min_samples_leaf=20,
                 max_features="sqrt", bootstrap=True)
 
@@ -396,7 +391,7 @@ def run_rf_lad_analysis():
     pred_tr = np.maximum(model.predict(X_tr), 0.0)
     pred_te = np.maximum(model.predict(X_te), 0.0)
 
-    # -- Metrics ------------------------------------------------------------------
+    # Metrics
     def r2(y, yh):
         ss = ((y - yh)**2).sum(); st = ((y - y.mean())**2).sum()
         return 1 - ss/st if st > 0 else np.nan
@@ -405,7 +400,7 @@ def run_rf_lad_analysis():
         print(f"  {label}: R2={r2(y, pred):+.4f}  MAE={np.mean(np.abs(y - pred)):.4f}  "
               f"RMSE={np.sqrt(np.mean((y - pred)**2)):.4f}")
 
-    # -- SHAP on test set ---------------------------------------------------------
+    # SHAP on test set
     rng = np.random.default_rng(42)
 
     n_bg = min(500, len(X_tr))
@@ -427,13 +422,13 @@ def run_rf_lad_analysis():
     for feat, ms in sorted(zip(FEATURES, mean_abs_shap), key=lambda x: -x[1]):
         print(f"  {feat:<22} {ms:.5f}")
 
-    # -- RF native importances ----------------------------------------------------
+    # RF native importances
     imp = model.feature_importances_
     print("\nRF Feature Importances (Mean Decrease in Impurity):")
     for feat, val in sorted(zip(FEATURES, imp), key=lambda x: -x[1]):
         print(f"  {feat:<22} {val:.4f}")
 
-    # -- Permutation importance ----------------------------------------------------
+    # Permutation importance
     print("\nComputing permutation importance on test set...", flush=True)
     perm_result = permutation_importance(model, X_te, y_te, n_repeats=10,
                                           random_state=42, scoring="neg_mean_absolute_error",
@@ -445,11 +440,11 @@ def run_rf_lad_analysis():
     ):
         print(f"  {feat:<22} {mean_imp:.5f} (+/- {std_imp:.5f})")
 
-    # -- PLOTS --------------------------------------------------------------------
+    # PLOTS
     fig = plt.figure(figsize=(26, 18))
     gs = gridspec.GridSpec(3, 3, figure=fig, wspace=0.35, hspace=0.45)
 
-    # -- Panel 1: SHAP beeswarm ---------------------------------------------------
+    # Panel 1: SHAP beeswarm
     ax1 = fig.add_subplot(gs[0, :2])
     cmap = cm.coolwarm
 
@@ -480,7 +475,7 @@ def run_rf_lad_analysis():
     cbar.set_ticks([0, 0.5, 1])
     cbar.set_ticklabels(["low", "mid", "high"], fontsize=7.5)
 
-    # -- Panel 2: Mean |SHAP| bar -------------------------------------------------
+    # Panel 2: Mean |SHAP| bar
     ax2 = fig.add_subplot(gs[0, 2])
     bar_order = np.argsort(mean_abs_shap)[::-1]
     bar_colors = plt.cm.Set2(np.linspace(0, 1, len(FEATURES)))
@@ -498,7 +493,7 @@ def run_rf_lad_analysis():
     ax2.spines["top"].set_visible(False)
     ax2.spines["right"].set_visible(False)
 
-    # -- Panel 3-5: SHAP dependence for top 3 ------------------------------------
+    # Panel 3-5: SHAP dependence for top 3
     top3 = bar_order[:3]
     for k, fi in enumerate(top3):
         ax = fig.add_subplot(gs[1, k])
@@ -518,7 +513,7 @@ def run_rf_lad_analysis():
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
 
-    # -- Panel 6: Predicted vs Actual ---------------------------------------------
+    # Panel 6: Predicted vs Actual
     ax6 = fig.add_subplot(gs[2, 0])
     clip_v = np.percentile(y_te, 98)
     samp = rng.choice(len(y_te), size=min(5000, len(y_te)), replace=False)
@@ -538,7 +533,7 @@ def run_rf_lad_analysis():
     ax6.spines["top"].set_visible(False)
     ax6.spines["right"].set_visible(False)
 
-    # -- Panel 7: Residual distribution -------------------------------------------
+    # Panel 7: Residual distribution
     ax7 = fig.add_subplot(gs[2, 1])
     resid = y_te - pred_te
     clip_r = np.percentile(np.abs(resid), 98)
@@ -560,7 +555,7 @@ def run_rf_lad_analysis():
     ax7.spines["top"].set_visible(False)
     ax7.spines["right"].set_visible(False)
 
-    # -- Panel 8: MAE by decile --------------------------------------------------
+    # Panel 8: MAE by decile
     ax8 = fig.add_subplot(gs[2, 2])
     decile_labels = pd.qcut(pred_te, q=10, labels=False, duplicates="drop")
     n_deciles = len(np.unique(decile_labels))
@@ -597,7 +592,7 @@ def run_rf_lad_analysis():
     print("\nSaved -> aapl_rf_lad_analysis.png")
 
 
-# =============================================================================
+# =
 def run_rf_mse_analysis():
     """
     SHAP, feature importance, and residual analytics for Random Forest MSE model.
@@ -608,7 +603,7 @@ def run_rf_mse_analysis():
 
     Output: aapl_rf_mse_analysis.png
     """
-    # -- Load data ----------------------------------------------------------------
+    # Load data
     df_tr = pd.read_parquet("data/lit_buy_features_v2.parquet")
     df_te = pd.read_parquet("data/lit_buy_features_v2_sep.parquet")
     df_tr["abs_impact"] = df_tr["impact_vwap_bps"].abs()
@@ -628,7 +623,7 @@ def run_rf_mse_analysis():
 
     print(f"Train: {len(df_tr):,}  |  Test: {len(df_te):,}")
 
-    # -- Train model --------------------------------------------------------------
+    # Train model
     BEST = dict(max_depth=30, n_estimators=50, min_samples_leaf=20,
                 max_features=0.33, bootstrap=False)
 
@@ -640,7 +635,7 @@ def run_rf_mse_analysis():
     pred_tr = np.maximum(model.predict(X_tr), 0.0)
     pred_te = np.maximum(model.predict(X_te), 0.0)
 
-    # -- Metrics ------------------------------------------------------------------
+    # Metrics
     def r2(y, yh):
         ss = ((y - yh)**2).sum(); st = ((y - y.mean())**2).sum()
         return 1 - ss/st if st > 0 else np.nan
@@ -649,7 +644,7 @@ def run_rf_mse_analysis():
         print(f"  {label}: R2={r2(y, pred):+.4f}  MAE={np.mean(np.abs(y - pred)):.4f}  "
               f"RMSE={np.sqrt(np.mean((y - pred)**2)):.4f}")
 
-    # -- SHAP on test set ---------------------------------------------------------
+    # SHAP on test set
     rng = np.random.default_rng(42)
 
     # Use background subsample for TreeExplainer
@@ -674,13 +669,13 @@ def run_rf_mse_analysis():
     for feat, ms in sorted(zip(FEATURES, mean_abs_shap), key=lambda x: -x[1]):
         print(f"  {feat:<22} {ms:.5f}")
 
-    # -- RF native importances ----------------------------------------------------
+    # RF native importances
     imp = model.feature_importances_
     print("\nRF Feature Importances (Mean Decrease in Impurity):")
     for feat, val in sorted(zip(FEATURES, imp), key=lambda x: -x[1]):
         print(f"  {feat:<22} {val:.4f}")
 
-    # -- Permutation importance on test set ----------------------------------------
+    # Permutation importance on test set
     print("\nComputing permutation importance on test set...", flush=True)
     perm_result = permutation_importance(model, X_te, y_te, n_repeats=10,
                                           random_state=42, scoring="neg_mean_squared_error",
@@ -692,11 +687,11 @@ def run_rf_mse_analysis():
     ):
         print(f"  {feat:<22} {mean_imp:.5f} (+/- {std_imp:.5f})")
 
-    # -- PLOTS --------------------------------------------------------------------
+    # PLOTS
     fig = plt.figure(figsize=(26, 18))
     gs = gridspec.GridSpec(3, 3, figure=fig, wspace=0.35, hspace=0.45)
 
-    # -- Panel 1: SHAP beeswarm ---------------------------------------------------
+    # Panel 1: SHAP beeswarm
     ax1 = fig.add_subplot(gs[0, :2])
     cmap = cm.coolwarm
 
@@ -727,7 +722,7 @@ def run_rf_mse_analysis():
     cbar.set_ticks([0, 0.5, 1])
     cbar.set_ticklabels(["low", "mid", "high"], fontsize=7.5)
 
-    # -- Panel 2: Mean |SHAP| bar -------------------------------------------------
+    # Panel 2: Mean |SHAP| bar
     ax2 = fig.add_subplot(gs[0, 2])
     bar_order = np.argsort(mean_abs_shap)[::-1]
     bar_colors = plt.cm.Set2(np.linspace(0, 1, len(FEATURES)))
@@ -745,7 +740,7 @@ def run_rf_mse_analysis():
     ax2.spines["top"].set_visible(False)
     ax2.spines["right"].set_visible(False)
 
-    # -- Panel 3-5: SHAP dependence plots for top 3 features ----------------------
+    # Panel 3-5: SHAP dependence plots for top 3 features
     top3 = bar_order[:3]
 
     for k, fi in enumerate(top3):
@@ -766,7 +761,7 @@ def run_rf_mse_analysis():
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
 
-    # -- Panel 6: Predicted vs Actual scatter --------------------------------------
+    # Panel 6: Predicted vs Actual scatter
     ax6 = fig.add_subplot(gs[2, 0])
     clip_v = np.percentile(y_te, 98)
     samp = rng.choice(len(y_te), size=min(5000, len(y_te)), replace=False)
@@ -786,7 +781,7 @@ def run_rf_mse_analysis():
     ax6.spines["top"].set_visible(False)
     ax6.spines["right"].set_visible(False)
 
-    # -- Panel 7: Residual distribution -------------------------------------------
+    # Panel 7: Residual distribution
     ax7 = fig.add_subplot(gs[2, 1])
     resid = y_te - pred_te
     clip_r = np.percentile(np.abs(resid), 98)
@@ -808,7 +803,7 @@ def run_rf_mse_analysis():
     ax7.spines["top"].set_visible(False)
     ax7.spines["right"].set_visible(False)
 
-    # -- Panel 8: MAE by decile of predicted value --------------------------------
+    # Panel 8: MAE by decile of predicted value
     ax8 = fig.add_subplot(gs[2, 2])
     decile_labels = pd.qcut(pred_te, q=10, labels=False, duplicates="drop")
     n_deciles = len(np.unique(decile_labels))
@@ -847,7 +842,7 @@ def run_rf_mse_analysis():
     print("\nSaved -> aapl_rf_mse_analysis.png")
 
 
-# =============================================================================
+# =
 def run_rf_mse_nonlinear():
     """
     Non-linearity analysis for Random Forest MSE model (6 features, depth=30).
@@ -860,7 +855,7 @@ def run_rf_mse_nonlinear():
 
     Output: aapl_rf_mse_nonlinear.png
     """
-    # -- Load & train -------------------------------------------------------------
+    # Load & train
     df_tr = pd.read_parquet("data/lit_buy_features_v2.parquet")
     df_te = pd.read_parquet("data/lit_buy_features_v2_sep.parquet")
     df_tr["abs_impact"] = df_tr["impact_vwap_bps"].abs()
@@ -888,7 +883,7 @@ def run_rf_mse_nonlinear():
     pred_te = np.maximum(model.predict(X_te), 0.0)
     resid = y_te - pred_te
 
-    # -- SHAP interaction values (on subsample) -----------------------------------
+    # SHAP interaction values (on subsample)
     rng = np.random.default_rng(42)
     n_shap = 800  # smaller for RF interaction (slow)
     shap_idx = rng.choice(len(X_te), size=n_shap, replace=False)
@@ -911,17 +906,17 @@ def run_rf_mse_nonlinear():
         row = "  ".join(f"{mean_interact[i, j]:>8.4f}" for j in range(len(FEATURES)))
         print(f"  {feat:<20} {row}")
 
-    # -- Permutation importance ---------------------------------------------------
+    # Permutation importance
     print("\nComputing permutation importance...", flush=True)
     perm_result = permutation_importance(model, X_te, y_te, n_repeats=10,
                                           random_state=42, scoring="neg_mean_squared_error",
                                           n_jobs=-1)
 
-    # -- Feature ranking by SHAP --------------------------------------------------
+    # Feature ranking by SHAP
     shap_main = np.abs(shap_interact).sum(axis=2).mean(axis=0)  # marginal SHAP importance
     feat_rank = np.argsort(shap_main)[::-1]  # descending
 
-    # -- PDP helper ---------------------------------------------------------------
+    # PDP helper
     def compute_pdp(model, X_background, feat_idx, grid_n=200):
         feat_vals = X_background[:, feat_idx]
         grid = np.linspace(np.percentile(feat_vals, 1), np.percentile(feat_vals, 99), grid_n)
@@ -934,7 +929,7 @@ def run_rf_mse_nonlinear():
             pdp_vals[gi] = np.maximum(model.predict(X_mod), 0.0).mean()
         return grid, pdp_vals
 
-    # -- ICE helper ---------------------------------------------------------------
+    # ICE helper
     def compute_ice(model, X_instances, feat_idx, grid_n=200):
         feat_vals = X_instances[:, feat_idx]
         grid = np.linspace(np.percentile(feat_vals, 1), np.percentile(feat_vals, 99), grid_n)
@@ -945,7 +940,7 @@ def run_rf_mse_nonlinear():
             ice[:, gi] = np.maximum(model.predict(X_mod), 0.0)
         return grid, ice
 
-    # -- Non-linearity residual test ----------------------------------------------
+    # Non-linearity residual test
     print("\nNon-linearity test: OLS residual vs feature, then fit quadratic")
     print(f"  {'Feature':<22} {'Lin coef':>10} {'Quad coef':>10} {'Quad R2 gain':>13}")
     for fi in range(len(FEATURES)):
@@ -961,11 +956,11 @@ def run_rf_mse_nonlinear():
         r2_quad = 1 - ss_quad / ss_tot
         print(f"  {FEATURES[fi]:<22} {c_lin[0]:>+10.5f} {c_quad[0]:>+10.5f} {r2_quad - r2_lin:>+13.6f}")
 
-    # -- PLOT ---------------------------------------------------------------------
+    # PLOT
     fig = plt.figure(figsize=(28, 20))
     gs_fig = gridspec.GridSpec(3, 6, figure=fig, wspace=0.38, hspace=0.45)
 
-    # -- Row 0: PDP for all 6 features -------------------------------------------
+    # Row 0: PDP for all 6 features
     pdp_colors = ["#2563eb", "#16a34a", "#dc2626", "#7c3aed", "#f59e0b", "#06b6d4"]
     for k in range(6):
         fi = k
@@ -986,7 +981,7 @@ def run_rf_mse_nonlinear():
         ax.spines["right"].set_visible(False)
         ax.set_xlim(np.percentile(X_te[:, fi], 1), np.percentile(X_te[:, fi], 99))
 
-    # -- Row 1: ICE for top 3, SHAP interaction heatmap, perm importance ----------
+    # Row 1: ICE for top 3, SHAP interaction heatmap, perm importance
     top3_fi = feat_rank[:3]
     ice_colors = ["#7c3aed", "#16a34a", "#2563eb"]
 
@@ -1048,7 +1043,7 @@ def run_rf_mse_nonlinear():
     ax_perm.spines["top"].set_visible(False)
     ax_perm.spines["right"].set_visible(False)
 
-    # -- Row 2: Residual vs each feature -----------------------------------------
+    # Row 2: Residual vs each feature
     for k in range(6):
         fi = k
         ax = fig.add_subplot(gs_fig[2, k])
@@ -1101,7 +1096,7 @@ def run_rf_mse_nonlinear():
     print("\nSaved -> aapl_rf_mse_nonlinear.png")
 
 
-# =============================================================================
+# =
 def run_regen_rf_plot():
     """Regenerate RF grid search plot from saved CSV (no grid search rerun).
     Output: aapl_gridsearch_rf_mse.png
@@ -1165,7 +1160,7 @@ def run_regen_rf_plot():
     pred_tr_coin = np.maximum(rf_coin.predict(X_tr_coin), 0.0)
     pred_te_coin = np.maximum(rf_coin.predict(X_te_coin), 0.0)
 
-    # -- PLOT --
+    # PLOT
     fig = plt.figure(figsize=(24, 12))
     gs_fig = gridspec.GridSpec(2, 3, figure=fig, wspace=0.32, hspace=0.45)
     METRIC_COL = "mean_MSE"
@@ -1319,7 +1314,7 @@ def run_regen_rf_plot():
     print("Saved -> aapl_gridsearch_rf_mse.png")
 
 
-# =============================================================================
+# =
 if __name__ == "__main__":
     run_rf_holdout()
     run_rf_lad_analysis()

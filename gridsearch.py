@@ -1,12 +1,6 @@
 """
-Hyperparameter grid search experiments.
-
-Consolidates:
-  - gridsearch_detail_6feat.py     : XGB GridSearch, 6 features, MAE scoring
-  - gridsearch_detail_6feat_mse.py : XGB GridSearch, 6 features, MSE scoring
-  - gridsearch_rf_lad.py           : RF GridSearch, 6 features, LAD/MAE scoring
-  - gridsearch_rf_mse.py           : RF GridSearch, 6 features, MSE scoring
-  - gridsearch_xgb_lad.py          : XGB GridSearch, 6 features, LAD scoring
+Hyperparameter tuning for XGBoost and Random Forest, both MSE and LAD objectives,
+via 3-fold time-series walk-forward CV on June-Aug 2024 AAPL data.
 """
 
 import os
@@ -27,9 +21,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import GridSearchCV, TimeSeriesSplit
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 # gridsearch_detail_6feat.py
-# ══════════════════════════════════════════════════════════════════════════════
 def run_gridsearch_detail_6feat():
     """XGB GridSearchCV on June-Aug 2024 training data — 6 FEATURES (no day_of_week, no time_of_day).
 
@@ -58,7 +50,7 @@ def run_gridsearch_detail_6feat():
       - data/gridsearch_details_6feat.csv
       - aapl_gridsearch_detail_6feat.png
     """
-    # ── Load training and test data ──────────────────────────────────────────────
+    # Load training and test data
     df_tr = pd.read_parquet("data/lit_buy_features_v2.parquet")
     df_te = pd.read_parquet("data/lit_buy_features_v2_sep.parquet")
 
@@ -74,7 +66,7 @@ def run_gridsearch_detail_6feat():
           f"({df_te['date'].min()} .. {df_te['date'].max()})")
     print("  ** September data is NOT used in the 3-fold CV — holdout only **")
 
-    # ── Feature / target arrays ─────────────────────────────────────────────────
+    # Feature / target arrays
     FEATURES = [
         "dollar_value",
         "log_dollar_value",
@@ -91,7 +83,7 @@ def run_gridsearch_detail_6feat():
     print(f"Features ({len(FEATURES)}): {FEATURES}")
     print(f"Train shape: {X_tr.shape}  |  Target mean: {y_tr.mean():.4f} bps")
 
-    # ── Grid definition ─────────────────────────────────────────────────────────
+    # Grid definition
     PARAM_GRID = {
         "max_depth":        [1, 2, 3, 4],
         "n_estimators":     [50, 80, 120, 200],
@@ -107,7 +99,7 @@ def run_gridsearch_detail_6feat():
     print(f"\nGrid: {n_combos:,} combinations x 3 folds = {n_combos * 3:,} fits")
     print(f"GridSearchCV objective: reg:squarederror (fast)")
 
-    # ── GridSearchCV — runs ONLY on June-Aug training data ──────────────────────
+    # GridSearchCV — runs ONLY on June-Aug training data
     base = XGBRegressor(
         objective="reg:squarederror",
         tree_method="hist",
@@ -137,7 +129,7 @@ def run_gridsearch_detail_6feat():
     elapsed = time.time() - t0
     print(f"Done in {elapsed:.1f}s.\n")
 
-    # ── Build results table ─────────────────────────────────────────────────────
+    # Build results table
     res = pd.DataFrame(gs.cv_results_)
 
     results = pd.DataFrame({
@@ -153,11 +145,11 @@ def run_gridsearch_detail_6feat():
     })
     results = results.sort_values("rank").reset_index(drop=True)
 
-    # ── Save full table ─────────────────────────────────────────────────────────
+    # Save full table
     results.to_csv("data/gridsearch_details_6feat.csv", index=False)
     print(f"Saved full table -> data/gridsearch_details_6feat.csv  ({len(results):,} rows)\n")
 
-    # ── Print top 20 and bottom 5 ──────────────────────────────────────────────
+    # Print top 20 and bottom 5
     pd.set_option("display.max_columns", 20)
     pd.set_option("display.width", 140)
     pd.set_option("display.float_format", "{:.6f}".format)
@@ -176,7 +168,7 @@ def run_gridsearch_detail_6feat():
     print(f"  Best mean MAE: {-gs.best_score_:.6f} bps")
     print(f"  MAE range: {results['mean_MAE'].min():.6f} .. {results['mean_MAE'].max():.6f} bps")
 
-    # ── Retrain best config with BOTH objectives, evaluate on Sep holdout ───────
+    # Retrain best config with BOTH objectives, evaluate on Sep holdout
     best = gs.best_params_
 
     def r2(ytrue, ypred):
@@ -226,11 +218,11 @@ def run_gridsearch_detail_6feat():
 
     print("=" * 120)
 
-    # ── PLOTS ────────────────────────────────────────────────────────────────────
+    # PLOTS
     fig = plt.figure(figsize=(24, 12))
     gs_fig = gridspec.GridSpec(2, 3, figure=fig, wspace=0.32, hspace=0.45)
 
-    # ── Panel 1: Heatmap of max_depth vs learning_rate ──────────────────────────
+    # Panel 1: Heatmap of max_depth vs learning_rate
     ax1 = fig.add_subplot(gs_fig[0, 0])
 
     depths = sorted(results["max_depth"].unique())
@@ -260,7 +252,7 @@ def run_gridsearch_detail_6feat():
     cb1 = fig.colorbar(im1, ax=ax1, shrink=0.8, pad=0.02)
     cb1.set_label("MAE (bps)", fontsize=9)
 
-    # ── Panel 2: Heatmap of reg_alpha vs reg_lambda ────────────────────────────
+    # Panel 2: Heatmap of reg_alpha vs reg_lambda
     ax2 = fig.add_subplot(gs_fig[0, 1])
 
     alphas = sorted(results["reg_alpha"].unique())
@@ -290,7 +282,7 @@ def run_gridsearch_detail_6feat():
     cb2 = fig.colorbar(im2, ax=ax2, shrink=0.8, pad=0.02)
     cb2.set_label("MAE (bps)", fontsize=9)
 
-    # ── Panel 3: Line plot — MAE vs each param at best values ──────────────────
+    # Panel 3: Line plot — MAE vs each param at best values
     ax3 = fig.add_subplot(gs_fig[0, 2])
 
     param_names = ["max_depth", "n_estimators", "learning_rate",
@@ -329,7 +321,7 @@ def run_gridsearch_detail_6feat():
     ax3.spines["top"].set_visible(False)
     ax3.spines["right"].set_visible(False)
 
-    # ── Panel 4: Feature importances bar chart ──────────────────────────────────
+    # Panel 4: Feature importances bar chart
     ax4 = fig.add_subplot(gs_fig[1, 0])
 
     sort_idx = np.argsort(imp_se)[::-1]
@@ -350,7 +342,7 @@ def run_gridsearch_detail_6feat():
     ax4.spines["top"].set_visible(False)
     ax4.spines["right"].set_visible(False)
 
-    # ── Panel 5: Heatmap of max_depth vs min_child_weight ──────────────────────
+    # Panel 5: Heatmap of max_depth vs min_child_weight
     ax5 = fig.add_subplot(gs_fig[1, 1])
 
     mcws = sorted(results["min_child_weight"].unique())
@@ -379,7 +371,7 @@ def run_gridsearch_detail_6feat():
     cb5 = fig.colorbar(im5, ax=ax5, shrink=0.8, pad=0.02)
     cb5.set_label("MAE (bps)", fontsize=9)
 
-    # ── Panel 6: Holdout summary ───────────────────────────────────────────────
+    # Panel 6: Holdout summary
     ax6 = fig.add_subplot(gs_fig[1, 2])
     ax6.axis("off")
 
@@ -417,9 +409,7 @@ def run_gridsearch_detail_6feat():
     print(f"\nSaved -> aapl_gridsearch_detail_6feat.png")
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 # gridsearch_detail_6feat_mse.py
-# ══════════════════════════════════════════════════════════════════════════════
 def run_gridsearch_detail_6feat_mse():
     """XGB GridSearchCV on June-Aug 2024 training data — 6 FEATURES, MSE scoring.
 
@@ -764,9 +754,7 @@ def run_gridsearch_detail_6feat_mse():
     print(f"\nSaved -> aapl_gridsearch_detail_6feat_mse.png")
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 # gridsearch_rf_lad.py
-# ══════════════════════════════════════════════════════════════════════════════
 def run_gridsearch_rf_lad():
     """Random Forest GridSearchCV, 6 FEATURES, LAD (MAE) scoring.
 
@@ -791,7 +779,7 @@ def run_gridsearch_rf_lad():
     def rmse_fn(ytrue, ypred):
         return np.sqrt(np.mean((ytrue - ypred)**2))
 
-    # -- Load AAPL data ----------------------------------------------------------
+    # Load AAPL data
     df_tr = pd.read_parquet("data/lit_buy_features_v2.parquet")
     df_te = pd.read_parquet("data/lit_buy_features_v2_sep.parquet")
     df_tr["abs_impact"] = df_tr["impact_vwap_bps"].abs()
@@ -809,7 +797,7 @@ def run_gridsearch_rf_lad():
 
     print(f"AAPL Train: {len(df_tr):,}  |  Test: {len(df_te):,}")
 
-    # -- Grid definition ----------------------------------------------------------
+    # Grid definition
     PARAM_GRID = {
         "max_depth":        [5, 10, 20, 30],
         "n_estimators":     [50, 100, 200],
@@ -823,7 +811,7 @@ def run_gridsearch_rf_lad():
         n_combos *= len(v)
     print(f"Grid: {n_combos:,} combinations x 3 folds = {n_combos * 3:,} fits")
 
-    # -- GridSearchCV -------------------------------------------------------------
+    # GridSearchCV
     base = RandomForestRegressor(
         criterion="absolute_error",
         random_state=42,
@@ -849,7 +837,7 @@ def run_gridsearch_rf_lad():
     elapsed = time.time() - t0
     print(f"Done in {elapsed:.1f}s.\n")
 
-    # -- Results table ------------------------------------------------------------
+    # Results table
     res = pd.DataFrame(gs.cv_results_)
     results = pd.DataFrame({
         "rank":             res["rank_test_score"],
@@ -879,7 +867,7 @@ def run_gridsearch_rf_lad():
     print(f"\n  Best: {best}")
     print(f"  Best mean CV MAE: {best_mae:.6f} bps")
 
-    # -- Evaluate on AAPL ---------------------------------------------------------
+    # Evaluate on AAPL
     best_model = gs.best_estimator_
     pred_tr_aapl = np.maximum(best_model.predict(X_tr), 0.0)
     pred_te_aapl = np.maximum(best_model.predict(X_te), 0.0)
@@ -895,7 +883,7 @@ def run_gridsearch_rf_lad():
     for feat, val in sorted(zip(FEATURES, imp), key=lambda x: -x[1]):
         print(f"    {feat:<22} {val:.4f}")
 
-    # -- Evaluate on COIN ---------------------------------------------------------
+    # Evaluate on COIN
     df_tr_coin = pd.read_parquet("data/coin_lit_buy_features_train.parquet")
     df_te_coin = pd.read_parquet("data/coin_lit_buy_features_test.parquet")
     df_tr_coin["abs_impact"] = df_tr_coin["impact_vwap_bps"].abs()
@@ -920,7 +908,7 @@ def run_gridsearch_rf_lad():
     print(f"  In-sample:  R2={r2(y_tr_coin, pred_tr_coin):+.4f}  MAE={mae_fn(y_tr_coin, pred_tr_coin):.4f}  RMSE={rmse_fn(y_tr_coin, pred_tr_coin):.4f}")
     print(f"  OOS (Sep):  R2={r2(y_te_coin, pred_te_coin):+.4f}  MAE={mae_fn(y_te_coin, pred_te_coin):.4f}  RMSE={rmse_fn(y_te_coin, pred_te_coin):.4f}")
 
-    # -- PLOTS --------------------------------------------------------------------
+    # PLOTS
     fig = plt.figure(figsize=(24, 12))
     gs_fig = gridspec.GridSpec(2, 3, figure=fig, wspace=0.32, hspace=0.45)
     METRIC_COL = "mean_MAE"
@@ -1071,9 +1059,7 @@ def run_gridsearch_rf_lad():
     print(f"\nSaved -> aapl_gridsearch_rf_lad.png")
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 # gridsearch_rf_mse.py
-# ══════════════════════════════════════════════════════════════════════════════
 def run_gridsearch_rf_mse():
     """Random Forest GridSearchCV on June-Aug 2024 training data, 6 FEATURES, MSE scoring.
 
@@ -1084,7 +1070,7 @@ def run_gridsearch_rf_mse():
       - aapl_gridsearch_rf_mse.png
       - Console: in-sample / OOS metrics for AAPL and COIN
     """
-    # -- helpers ------------------------------------------------------------------
+    # helpers
     def r2(ytrue, ypred):
         ss_res = ((ytrue - ypred) ** 2).sum()
         ss_tot = ((ytrue - ytrue.mean()) ** 2).sum()
@@ -1096,7 +1082,7 @@ def run_gridsearch_rf_mse():
     def rmse_fn(ytrue, ypred):
         return np.sqrt(np.mean((ytrue - ypred) ** 2))
 
-    # -- Load AAPL data ----------------------------------------------------------
+    # Load AAPL data
     df_tr = pd.read_parquet("data/lit_buy_features_v2.parquet")
     df_te = pd.read_parquet("data/lit_buy_features_v2_sep.parquet")
     df_tr["abs_impact"] = df_tr["impact_vwap_bps"].abs()
@@ -1120,7 +1106,7 @@ def run_gridsearch_rf_mse():
     print(f"Features ({len(FEATURES)}): {FEATURES}")
     print(f"Train shape: {X_tr.shape}  |  Target mean: {y_tr.mean():.4f} bps")
 
-    # -- Grid definition ----------------------------------------------------------
+    # Grid definition
     PARAM_GRID = {
         "max_depth":        [5, 10, 20, 30, 40],
         "n_estimators":     [50, 100, 200, 400],
@@ -1135,7 +1121,7 @@ def run_gridsearch_rf_mse():
     print(f"\nGrid: {n_combos:,} combinations x 3 folds = {n_combos * 3:,} fits")
     print(f"Scoring: neg_mean_squared_error")
 
-    # -- GridSearchCV -------------------------------------------------------------
+    # GridSearchCV
     base = RandomForestRegressor(random_state=42, n_jobs=1)
     tscv = TimeSeriesSplit(n_splits=3)
 
@@ -1156,7 +1142,7 @@ def run_gridsearch_rf_mse():
     elapsed = time.time() - t0
     print(f"Done in {elapsed:.1f}s.\n")
 
-    # -- Results table ------------------------------------------------------------
+    # Results table
     res = pd.DataFrame(gs.cv_results_)
     results = pd.DataFrame({
         "rank":             res["rank_test_score"],
@@ -1192,7 +1178,7 @@ def run_gridsearch_rf_mse():
     print(f"\n  Best: {best}")
     print(f"  Best mean MSE: {-gs.best_score_:.6f}  (RMSE: {best_rmse:.6f} bps)")
 
-    # -- Evaluate best RF on AAPL train + Sep holdout ----------------------------
+    # Evaluate best RF on AAPL train + Sep holdout
     best_model = gs.best_estimator_
     pred_tr_aapl = np.maximum(best_model.predict(X_tr), 0.0)
     pred_te_aapl = np.maximum(best_model.predict(X_te), 0.0)
@@ -1209,7 +1195,7 @@ def run_gridsearch_rf_mse():
         bar = "#" * int(val * 100)
         print(f"    {feat:<22} {val:.4f}  {bar}")
 
-    # -- Evaluate on COIN --------------------------------------------------------
+    # Evaluate on COIN
     df_tr_coin = pd.read_parquet("data/coin_lit_buy_features_train.parquet")
     df_te_coin = pd.read_parquet("data/coin_lit_buy_features_test.parquet")
     df_tr_coin["abs_impact"] = df_tr_coin["impact_vwap_bps"].abs()
@@ -1237,7 +1223,7 @@ def run_gridsearch_rf_mse():
     print(f"  In-sample:  R2={r2(y_tr_coin, pred_tr_coin):+.4f}  MAE={mae_fn(y_tr_coin, pred_tr_coin):.4f}  RMSE={rmse_fn(y_tr_coin, pred_tr_coin):.4f} bps")
     print(f"  OOS (Sep):  R2={r2(y_te_coin, pred_te_coin):+.4f}  MAE={mae_fn(y_te_coin, pred_te_coin):.4f}  RMSE={rmse_fn(y_te_coin, pred_te_coin):.4f} bps")
 
-    # -- PLOTS (AAPL grid search) ------------------------------------------------
+    # PLOTS (AAPL grid search)
     fig = plt.figure(figsize=(24, 12))
     gs_fig = gridspec.GridSpec(2, 3, figure=fig, wspace=0.32, hspace=0.45)
 
@@ -1395,9 +1381,7 @@ def run_gridsearch_rf_mse():
     print(f"\nSaved -> aapl_gridsearch_rf_mse.png")
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 # gridsearch_xgb_lad.py
-# ══════════════════════════════════════════════════════════════════════════════
 def run_gridsearch_xgb_lad():
     """XGB GridSearchCV on June-Aug 2024 training data, 6 FEATURES, LAD (MAE) scoring.
 
@@ -1422,7 +1406,7 @@ def run_gridsearch_xgb_lad():
     def rmse_fn(ytrue, ypred):
         return np.sqrt(np.mean((ytrue - ypred)**2))
 
-    # -- Load AAPL data ----------------------------------------------------------
+    # Load AAPL data
     df_tr = pd.read_parquet("data/lit_buy_features_v2.parquet")
     df_te = pd.read_parquet("data/lit_buy_features_v2_sep.parquet")
     df_tr["abs_impact"] = df_tr["impact_vwap_bps"].abs()
@@ -1440,7 +1424,7 @@ def run_gridsearch_xgb_lad():
 
     print(f"AAPL Train: {len(df_tr):,}  |  Test: {len(df_te):,}")
 
-    # -- Grid definition ----------------------------------------------------------
+    # Grid definition
     PARAM_GRID = {
         "max_depth":        [1, 2, 3, 4],
         "n_estimators":     [50, 80, 120, 200],
@@ -1455,7 +1439,7 @@ def run_gridsearch_xgb_lad():
         n_combos *= len(v)
     print(f"Grid: {n_combos:,} combinations x 3 folds = {n_combos * 3:,} fits")
 
-    # -- GridSearchCV -------------------------------------------------------------
+    # GridSearchCV
     base = XGBRegressor(
         objective="reg:absoluteerror",
         tree_method="hist",
@@ -1483,7 +1467,7 @@ def run_gridsearch_xgb_lad():
     elapsed = time.time() - t0
     print(f"Done in {elapsed:.1f}s.\n")
 
-    # -- Results table ------------------------------------------------------------
+    # Results table
     res = pd.DataFrame(gs.cv_results_)
     results = pd.DataFrame({
         "rank":             res["rank_test_score"],
@@ -1514,7 +1498,7 @@ def run_gridsearch_xgb_lad():
     print(f"\n  Best: {best}")
     print(f"  Best mean CV MAE: {best_mae:.6f} bps")
 
-    # -- Evaluate on AAPL ---------------------------------------------------------
+    # Evaluate on AAPL
     best_model = gs.best_estimator_
     pred_tr_aapl = np.maximum(best_model.predict(X_tr), 0.0)
     pred_te_aapl = np.maximum(best_model.predict(X_te), 0.0)
@@ -1530,7 +1514,7 @@ def run_gridsearch_xgb_lad():
     for feat, val in sorted(zip(FEATURES, imp), key=lambda x: -x[1]):
         print(f"    {feat:<22} {val:.4f}")
 
-    # -- Evaluate on COIN ---------------------------------------------------------
+    # Evaluate on COIN
     df_tr_coin = pd.read_parquet("data/coin_lit_buy_features_train.parquet")
     df_te_coin = pd.read_parquet("data/coin_lit_buy_features_test.parquet")
     df_tr_coin["abs_impact"] = df_tr_coin["impact_vwap_bps"].abs()
@@ -1556,7 +1540,7 @@ def run_gridsearch_xgb_lad():
     print(f"  In-sample:  R2={r2(y_tr_coin, pred_tr_coin):+.4f}  MAE={mae_fn(y_tr_coin, pred_tr_coin):.4f}  RMSE={rmse_fn(y_tr_coin, pred_tr_coin):.4f}")
     print(f"  OOS (Sep):  R2={r2(y_te_coin, pred_te_coin):+.4f}  MAE={mae_fn(y_te_coin, pred_te_coin):.4f}  RMSE={rmse_fn(y_te_coin, pred_te_coin):.4f}")
 
-    # -- PLOTS --------------------------------------------------------------------
+    # PLOTS
     fig = plt.figure(figsize=(24, 12))
     gs_fig = gridspec.GridSpec(2, 3, figure=fig, wspace=0.32, hspace=0.45)
     METRIC_COL = "mean_MAE"

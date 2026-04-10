@@ -1,13 +1,8 @@
 """
-Consolidated data pipeline and visualization scripts.
-
-Functions:
-  run_fetch_trades()            -- Fetch tick-level trades from Polygon.io
-  run_get_exchanges()           -- List Polygon exchange IDs and metadata
-  run_block_trades()            -- Find block trades, compute pre/post slippage
-  run_check_exchange()          -- Exchange distribution of block trades
-  run_cross_stock_pipeline()    -- Cross-stock validation pipeline (fetch, feature, GAMLSS)
-  run_summary_visualizations()  -- Summary dashboard: model comparison, GAMLSS calibration, EDA
+Data fetching, block trade identification, and the full cross-stock validation pipeline.
+Pulls tick data from Polygon.io, filters to lit-exchange blocks over $200k, computes
+rolling features, and fits the two-stage GAMLSS on each ticker. Also includes the
+summary dashboard figures used in the article.
 """
 
 import os
@@ -47,9 +42,7 @@ def run_fetch_trades():
     Output: data/<TICKER>/<YYYY-MM-DD>.parquet
     """
 
-    # ---------------------------------------------------------------------------
     # Config
-    # ---------------------------------------------------------------------------
     API_KEY = "fvBzlF_z4PLBp8l0aikf6HCcI1rIn5A0"
 
     TICKERS_50 = [
@@ -75,9 +68,7 @@ def run_fetch_trades():
 
     DATA_DIR = Path("data")
 
-    # ---------------------------------------------------------------------------
     # Logging
-    # ---------------------------------------------------------------------------
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s  %(levelname)-8s  %(message)s",
@@ -85,9 +76,7 @@ def run_fetch_trades():
     )
     log = logging.getLogger(__name__)
 
-    # ---------------------------------------------------------------------------
     # Schema – matches Polygon v3 trades fields
-    # ---------------------------------------------------------------------------
     SCHEMA = pa.schema([
         ("participant_timestamp", pa.int64()),   # nanoseconds since epoch
         ("sip_timestamp",         pa.int64()),
@@ -206,9 +195,7 @@ def run_fetch_trades():
             cur += timedelta(days=1)
         return days
 
-    # ---------------------------------------------------------------------------
     # Entry point
-    # ---------------------------------------------------------------------------
     args = sys.argv[1:]
 
     if "--all" in args:
@@ -246,9 +233,7 @@ def run_block_trades():
     compute slippage in bps. Saves to data/block_trades.parquet.
     """
 
-    # ---------------------------------------------------------------------------
     # Config
-    # ---------------------------------------------------------------------------
     DATA_DIR       = Path("data")
     OUT_PATH       = DATA_DIR / "block_trades.parquet"
     MIN_DOLLAR     = 200_000
@@ -306,14 +291,14 @@ def run_block_trades():
         block_idx = np.where(block_mask)[0]
         block_ts  = ts[block_idx]
 
-        # ── Pre-price: last trade strictly before block, within 1 second ──────
+        # Pre-price: last trade strictly before block, within 1 second
         # searchsorted 'left': all ts[:i] < block_ts at position i
         pre_ends = np.searchsorted(ts, block_ts, side="left")
         pre_idx  = pre_ends - 1
         pre_ok   = (pre_idx >= 0) & (ts[np.clip(pre_idx, 0, len(ts) - 1)] >= block_ts - ONE_SEC_NS)
         pre_prices = np.where(pre_ok, prices[np.clip(pre_idx, 0, len(prices) - 1)], np.nan)
 
-        # ── Post-price: first trade strictly after block, within 1 second ─────
+        # Post-price: first trade strictly after block, within 1 second
         # searchsorted 'right': all ts[i:] > block_ts at position i
         post_starts = np.searchsorted(ts, block_ts, side="right")
         post_ok     = (post_starts < len(ts)) & (
@@ -321,7 +306,7 @@ def run_block_trades():
         )
         post_prices = np.where(post_ok, prices[np.clip(post_starts, 0, len(prices) - 1)], np.nan)
 
-        # ── Slippage ──────────────────────────────────────────────────────────
+        # Slippage
         with np.errstate(invalid="ignore", divide="ignore"):
             slippage_bps = (post_prices - pre_prices) / pre_prices * 10_000
 
@@ -372,7 +357,7 @@ def run_block_trades():
     pq.write_table(combined, OUT_PATH, compression="snappy")
     log.info("Saved %d block trades to %s", len(combined), OUT_PATH)
 
-    # ── Summary stats ─────────────────────────────────────────────────────
+    # Summary stats
     df = combined.to_pandas()
 
     print("\n=== Block trades by ticker ===")
@@ -486,7 +471,7 @@ def run_cross_stock_pipeline():
     )
     log = logging.getLogger(__name__)
 
-    # ─── Config ──────────────────────────────────────────────────────────────────
+    # Config
     API_KEY = "fvBzlF_z4PLBp8l0aikf6HCcI1rIn5A0"
     DATA_DIR = Path("data")
     NEW_TICKERS = ["TSLA"]
@@ -537,9 +522,7 @@ def run_cross_stock_pipeline():
             cur += timedelta(days=1)
         return days
 
-    # ═════════════════════════════════════════════════════════════════════════════
     # STEP 1: Fetch tick trades from Polygon
-    # ═════════════════════════════════════════════════════════════════════════════
 
     def _trade_to_row(t):
         return {
@@ -631,9 +614,7 @@ def run_cross_stock_pipeline():
                 done += 1
                 time.sleep(0.15)
 
-    # ═════════════════════════════════════════════════════════════════════════════
     # STEP 2: Find block trades for a ticker
-    # ═════════════════════════════════════════════════════════════════════════════
 
     def find_blocks_for_ticker(ticker):
         """Find all block trades for a ticker from its daily parquet files."""
@@ -710,9 +691,7 @@ def run_cross_stock_pipeline():
                  ticker, len(result), len(files))
         return result
 
-    # ═════════════════════════════════════════════════════════════════════════════
     # STEP 3: Classify sides (tick test)
-    # ═════════════════════════════════════════════════════════════════════════════
 
     def classify_sides(blocks):
         raw = np.sign(blocks["price"].to_numpy() - blocks["pre_price"].to_numpy()).astype(float)
@@ -728,9 +707,7 @@ def run_cross_stock_pipeline():
             np.where(blocks["side"] == -1, "sell", "unknown"))
         return blocks
 
-    # ═════════════════════════════════════════════════════════════════════════════
     # STEP 4: Compute VWAP impact
-    # ═════════════════════════════════════════════════════════════════════════════
 
     def compute_vwap_impact(blocks, client):
         """Fetch 1-sec bars and compute VWAP-referenced impact for each block."""
@@ -781,9 +758,7 @@ def run_cross_stock_pipeline():
         blocks["impact_vwap_bps"] = impact
         return blocks
 
-    # ═════════════════════════════════════════════════════════════════════════════
     # STEP 5: Build features
-    # ═════════════════════════════════════════════════════════════════════════════
 
     def roll_spread_calc(px_window):
         dp = np.diff(px_window.astype(np.float64))
@@ -914,9 +889,7 @@ def run_cross_stock_pipeline():
         log.info("%s: features built — train=%d, test=%d", ticker, len(train_df), len(test_df))
         return train_df, test_df
 
-    # ═════════════════════════════════════════════════════════════════════════════
     # STEP 6: XGB GAMLSS with fixed hyperparameters
-    # ═════════════════════════════════════════════════════════════════════════════
 
     def run_gamlss(train_df, test_df, ticker):
         """Run 2-stage XGB GAMLSS and return results dict."""
@@ -981,9 +954,7 @@ def run_cross_stock_pipeline():
             "width_90": coverages[0.90][1],
         }
 
-    # ═════════════════════════════════════════════════════════════════════════════
     # STEP 7: Load existing AAPL/COIN results
-    # ═════════════════════════════════════════════════════════════════════════════
 
     def load_existing_results():
         """Run GAMLSS on existing AAPL and COIN data."""
@@ -1011,9 +982,7 @@ def run_cross_stock_pipeline():
 
         return results
 
-    # ═════════════════════════════════════════════════════════════════════════════
     # MAIN
-    # ═════════════════════════════════════════════════════════════════════════════
 
     dates = trading_days(DATE_START, DATE_END)
     log.info("Date range: %s to %s (%d trading days)", DATE_START, DATE_END, len(dates))
@@ -1084,9 +1053,7 @@ def run_cross_stock_pipeline():
         log.error("No results to display!")
         return
 
-    # ═════════════════════════════════════════════════════════════════════════
     # SUMMARY TABLE
-    # ═════════════════════════════════════════════════════════════════════════
     print(f"\n{'=' * 100}")
     print(f"  CROSS-STOCK XGB GAMLSS VALIDATION (3 features: spread, vol, participation)")
     print(f"  Location: XGB LAD (depth=3, n=200) | Scale: XGB MSE (depth=3, n=50)")
@@ -1106,9 +1073,7 @@ def run_cross_stock_pipeline():
 
     print(f"\n  Nominal targets:  90% -> 0.9000   80% -> 0.8000   50% -> 0.5000")
 
-    # ═════════════════════════════════════════════════════════════════════════
     # VISUALIZATION
-    # ═════════════════════════════════════════════════════════════════════════
     results_df = pd.DataFrame(all_results)
     n_stocks = len(results_df)
     tickers_ordered = results_df["ticker"].tolist()
@@ -1260,9 +1225,7 @@ def run_summary_visualizations():
     ]
     FEAT_SHORT = ["dollar_val", "log_dollar", "prate", "spread", "vol", "exch_id"]
 
-    # =============================================================================
     # FIGURE 1: Model Comparison Dashboard
-    # =============================================================================
     print("Building Figure 1: Model Comparison Dashboard...", flush=True)
 
     ols = pd.read_csv("data/ols_results.csv")
@@ -1421,9 +1384,7 @@ def run_summary_visualizations():
     plt.savefig("model_comparison.png", dpi=150, bbox_inches="tight")
     print("Saved -> model_comparison.png")
 
-    # =============================================================================
     # FIGURE 2: GAMLSS Calibration Overlay
-    # =============================================================================
     print("Building Figure 2: GAMLSS Calibration Overlay...", flush=True)
 
     # Recompute calibration curves from the raw data
@@ -1537,9 +1498,7 @@ def run_summary_visualizations():
     plt.savefig("gamlss_calibration_overlay.png", dpi=150, bbox_inches="tight")
     print("Saved -> gamlss_calibration_overlay.png")
 
-    # =============================================================================
     # FIGURE 3: EDA Overview
-    # =============================================================================
     print("Building Figure 3: EDA Overview...", flush=True)
 
     fig3 = plt.figure(figsize=(26, 16))
@@ -1547,7 +1506,7 @@ def run_summary_visualizations():
 
     rng = np.random.default_rng(42)
 
-    # -- Row 1, Col 1-2: Target distribution (AAPL and COIN) ---------------------
+    # Row 1, Col 1-2: Target distribution (AAPL and COIN)
     for col_idx, (ticker, df_tr, df_te) in enumerate([
         ("AAPL", df_tr_a, df_te_a), ("COIN", df_tr_c, df_te_c)
     ]):
@@ -1571,7 +1530,7 @@ def run_summary_visualizations():
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
 
-    # -- Row 1, Col 3: Target stats table ----------------------------------------
+    # Row 1, Col 3: Target stats table
     ax_table = fig3.add_subplot(gs3[0, 2])
     ax_table.axis("off")
 
@@ -1598,7 +1557,7 @@ def run_summary_visualizations():
     ax_table.set_title("Target Summary Statistics\n|impact_vwap_bps|",
                         fontsize=11, fontweight="bold", pad=20)
 
-    # -- Row 1, Col 4: Train/test time split -------------------------------------
+    # Row 1, Col 4: Train/test time split
     ax_ts = fig3.add_subplot(gs3[0, 3])
     for ticker, df_tr, df_te, color in [
         ("AAPL", df_tr_a, df_te_a, "#2563eb"),
@@ -1619,7 +1578,7 @@ def run_summary_visualizations():
     ax_ts.spines["top"].set_visible(False)
     ax_ts.spines["right"].set_visible(False)
 
-    # -- Row 2: Feature distributions (AAPL train) --------------------------------
+    # Row 2: Feature distributions (AAPL train)
     for i, (feat, short) in enumerate(zip(FEATURES, FEAT_SHORT)):
         ax = fig3.add_subplot(gs3[1, i]) if i < 4 else None
         if ax is None:
@@ -1640,7 +1599,7 @@ def run_summary_visualizations():
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
 
-    # -- Row 3, Col 1: Feature correlation heatmap (AAPL) -------------------------
+    # Row 3, Col 1: Feature correlation heatmap (AAPL)
     ax_corr = fig3.add_subplot(gs3[2, 0])
     corr = df_tr_a[FEATURES + ["abs_impact"]].corr()
     im = ax_corr.imshow(corr, cmap="RdBu_r", vmin=-1, vmax=1, aspect="auto")
@@ -1656,7 +1615,7 @@ def run_summary_visualizations():
     plt.colorbar(im, ax=ax_corr, fraction=0.046, pad=0.04)
     ax_corr.set_title("AAPL Feature Correlations\n(Pearson)", fontsize=10, fontweight="bold")
 
-    # -- Row 3, Col 2: Feature correlation heatmap (COIN) -------------------------
+    # Row 3, Col 2: Feature correlation heatmap (COIN)
     ax_corr2 = fig3.add_subplot(gs3[2, 1])
     corr2 = df_tr_c[FEATURES + ["abs_impact"]].corr()
     im2 = ax_corr2.imshow(corr2, cmap="RdBu_r", vmin=-1, vmax=1, aspect="auto")
@@ -1671,7 +1630,7 @@ def run_summary_visualizations():
     plt.colorbar(im2, ax=ax_corr2, fraction=0.046, pad=0.04)
     ax_corr2.set_title("COIN Feature Correlations\n(Pearson)", fontsize=10, fontweight="bold")
 
-    # -- Row 3, Col 3: Scatter: participation_rate vs impact ----------------------
+    # Row 3, Col 3: Scatter: participation_rate vs impact
     ax_sc1 = fig3.add_subplot(gs3[2, 2])
     samp_a = rng.choice(len(df_tr_a), size=min(3000, len(df_tr_a)), replace=False)
     samp_c = rng.choice(len(df_tr_c), size=min(3000, len(df_tr_c)), replace=False)
@@ -1692,7 +1651,7 @@ def run_summary_visualizations():
     ax_sc1.spines["top"].set_visible(False)
     ax_sc1.spines["right"].set_visible(False)
 
-    # -- Row 3, Col 4: Scatter: roll_vol_500 vs impact ----------------------------
+    # Row 3, Col 4: Scatter: roll_vol_500 vs impact
     ax_sc2 = fig3.add_subplot(gs3[2, 3])
     ax_sc2.scatter(df_tr_a["roll_vol_500"].iloc[samp_a],
                    df_tr_a["abs_impact"].iloc[samp_a], s=6, alpha=0.1,

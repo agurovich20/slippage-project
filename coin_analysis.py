@@ -1,11 +1,7 @@
 """
-Consolidated COIN and slippage analysis scripts.
-
-Functions:
-  run_coin_full_analysis()  -- COIN distribution fits, binned regression, model comparison,
-                               bootstrap CIs; saves coin_full_analysis.png
-  run_slippage_analysis()   -- Slippage breakdown by dollar-value bucket and time of day;
-                               saves slippage_breakdown.png
+COIN-specific analysis: distribution fitting, binned regression by spread, five-model
+holdout with AAPL hyperparams, bootstrap CIs, and a slippage breakdown by trade size
+and time of day.
 """
 
 import os
@@ -44,9 +40,7 @@ def run_coin_full_analysis():
     Output: coin_full_analysis.png (3 panels, bar chart includes bootstrap CIs)
     """
 
-    # ══════════════════════════════════════════════════════════════════════════════
-    # Load data
-    # ══════════════════════════════════════════════════════════════════════════════
+    # load data
     df_tr = pd.read_parquet("data/coin_lit_buy_features_train.parquet")
     df_te = pd.read_parquet("data/coin_lit_buy_features_test.parquet")
 
@@ -61,9 +55,7 @@ def run_coin_full_analysis():
     print(f"Test : {len(df_te):,} trades  |  {df_te['date'].nunique()} days  "
           f"({df_te['date'].min()} .. {df_te['date'].max()})")
 
-    # ══════════════════════════════════════════════════════════════════════════════
-    # (1) Distribution fits on train signed impact_vwap_bps
-    # ══════════════════════════════════════════════════════════════════════════════
+    # (1) distribution fits on train signed impact
     print(f"\n{'='*72}")
     print("(1) DISTRIBUTION FITS — COIN train impact_vwap_bps (signed)")
     print(f"{'='*72}")
@@ -74,7 +66,7 @@ def run_coin_full_analysis():
     print(f"n={n_dist:,}  mean={x_dist.mean():.4f}  median={np.median(x_dist):.4f}  "
           f"std={x_dist.std():.4f}")
 
-    # ── RI(2022) helpers ─────────────────────────────────────────────────────────
+    # RI(2022) helpers
     SQRT_PI2 = np.sqrt(np.pi / 2.0)
 
     def ri_neg_ll(params, x):
@@ -143,9 +135,7 @@ def run_coin_full_analysis():
         tag = " <-- best" if r["aic"] == best_aic else ""
         print(f"  {r['model']:<14} {r['k']:>2}  {r['ll']:>12.2f}  {r['aic']:>12.2f}{tag}")
 
-    # ══════════════════════════════════════════════════════════════════════════════
-    # (2) Binned regression: 20 bins by roll_spread_500
-    # ══════════════════════════════════════════════════════════════════════════════
+    # (2) binned regression: 20 bins by roll_spread_500
     print(f"\n{'='*72}")
     print("(2) BINNED REGRESSION — 20 bins by roll_spread_500 (train)")
     print(f"{'='*72}")
@@ -178,9 +168,7 @@ def run_coin_full_analysis():
     print(f"  In-sample R2 (on {len(bins_df)} bin means) = {r2_bin:.4f}")
     print(f"  Median count per bin = {int(np.median(cnt_bins))}")
 
-    # ══════════════════════════════════════════════════════════════════════════════
-    # (3) September holdout — 5 models with AAPL's best hyperparams
-    # ══════════════════════════════════════════════════════════════════════════════
+    # (3) September holdout — 5 models, AAPL hyperparams, no re-tuning on COIN
     print(f"\n{'='*72}")
     print("(3) SEPTEMBER HOLDOUT — AAPL hyperparams transferred to COIN")
     print(f"{'='*72}")
@@ -211,7 +199,7 @@ def run_coin_full_analysis():
     MODEL_NAMES = ["OLS-Uni", "LAD-Uni", "XGB-MSE", "XGB-MAE", "RF-MAE"]
     model_results = {}
 
-    # ── (a) OLS-Uni ──────────────────────────────────────────────────────────────
+    # OLS-Uni
     print("\n--- OLS-Uni ---")
     beta_ols, *_ = np.linalg.lstsq(Xlad_tr, y_tr_abs, rcond=None)
     pred_ols = np.maximum(Xlad_te @ beta_ols, 0.0)
@@ -220,7 +208,7 @@ def run_coin_full_analysis():
     print(f"  c1={beta_ols[0]:+.5f}  c2={beta_ols[1]:+.5f}  OOS R2={r2_ols_oos:+.4f}  MAE={mae_ols_oos:.4f}")
     model_results["OLS-Uni"] = {"r2": r2_ols_oos, "mae": mae_ols_oos, "pred": pred_ols}
 
-    # ── (b) LAD-Uni ──────────────────────────────────────────────────────────────
+    # LAD-Uni
     print("--- LAD-Uni ---")
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -232,7 +220,7 @@ def run_coin_full_analysis():
     print(f"  c1={beta_lad[0]:+.5f}  c2={beta_lad[1]:+.5f}  OOS R2={r2_lad_oos:+.4f}  MAE={mae_lad_oos:.4f}")
     model_results["LAD-Uni"] = {"r2": r2_lad_oos, "mae": mae_lad_oos, "pred": pred_lad}
 
-    # ── (c) XGB-MSE ──────────────────────────────────────────────────────────────
+    # XGB-MSE
     print("--- XGB-MSE (AAPL hyperparams) ---")
     xgb_mse = XGBRegressor(
         objective="reg:squarederror",
@@ -247,7 +235,7 @@ def run_coin_full_analysis():
     print(f"  OOS R2={r2_xm:+.4f}  MAE={mae_xm:.4f}")
     model_results["XGB-MSE"] = {"r2": r2_xm, "mae": mae_xm, "pred": pred_xgb_mse}
 
-    # ── (d) XGB-MAE ──────────────────────────────────────────────────────────────
+    # XGB-MAE
     print("--- XGB-MAE (AAPL hyperparams) ---")
     xgb_mae = XGBRegressor(
         objective="reg:absoluteerror",
@@ -262,7 +250,7 @@ def run_coin_full_analysis():
     print(f"  OOS R2={r2_xa:+.4f}  MAE={mae_xa:.4f}")
     model_results["XGB-MAE"] = {"r2": r2_xa, "mae": mae_xa, "pred": pred_xgb_mae}
 
-    # ── (e) RF-MAE ───────────────────────────────────────────────────────────────
+    # RF-MAE
     print("--- RF-MAE (AAPL hyperparams) ---")
     rf_mae = RandomForestRegressor(
         criterion="absolute_error",
@@ -277,7 +265,7 @@ def run_coin_full_analysis():
     print(f"  Feature importances: {dict(zip(FEATURES_3, rf_mae.feature_importances_.round(4)))}")
     model_results["RF-MAE"] = {"r2": r2_rf, "mae": mae_rf, "pred": pred_rf_mae}
 
-    # ── Summary table ────────────────────────────────────────────────────────────
+    # summary table
     print(f"\n{'='*62}")
     print(f"  {'Model':<12}  {'OOS R2':>9}  {'OOS MAE':>9}")
     print(f"  {'-'*34}")
@@ -286,9 +274,7 @@ def run_coin_full_analysis():
         print(f"  {nm:<12}  {info['r2']:>+9.4f}  {info['mae']:>9.4f}")
     print(f"{'='*62}")
 
-    # ══════════════════════════════════════════════════════════════════════════════
-    # (4) AAPL vs COIN side-by-side comparison
-    # ══════════════════════════════════════════════════════════════════════════════
+    # (4) AAPL vs COIN comparison
     print(f"\n\n{'='*80}")
     print(f"{'AAPL vs COIN — FULL COMPARISON':^80}")
     print(f"{'='*80}")
@@ -339,9 +325,7 @@ def run_coin_full_analysis():
     print(f"  {'Test roll_spread mean':<28} {aapl_te['roll_spread_500'].mean():>14.4f} {df_te['roll_spread_500'].mean():>14.4f}")
     print(f"{'='*80}")
 
-    # ══════════════════════════════════════════════════════════════════════════════
-    # (5) Bootstrap 95% CIs on September test trades
-    # ══════════════════════════════════════════════════════════════════════════════
+    # (5) bootstrap 95% CIs on September test set (1000 resamples)
     print(f"\n\n{'='*80}")
     print(f"(5) BOOTSTRAP 95% CIs — 1,000 resamples of {len(df_te):,} test trades")
     print(f"{'='*80}")
@@ -420,13 +404,11 @@ def run_coin_full_analysis():
 
     print(f"\n{'='*80}")
 
-    # ══════════════════════════════════════════════════════════════════════════════
-    # PLOT — 3 panels
-    # ══════════════════════════════════════════════════════════════════════════════
+    # 3-panel figure
     fig = plt.figure(figsize=(20, 6.5))
     gs_fig = gridspec.GridSpec(1, 3, figure=fig, wspace=0.32)
 
-    # ── Panel 1: Distribution fit ────────────────────────────────────────────────
+    # Panel 1: distribution fit
     ax1 = fig.add_subplot(gs_fig[0, 0])
 
     lo = max(np.percentile(x_dist, 0.5), -30.0)
@@ -463,7 +445,7 @@ def run_coin_full_analysis():
     ax1.spines["top"].set_visible(False)
     ax1.spines["right"].set_visible(False)
 
-    # ── Panel 2: Binned regression ───────────────────────────────────────────────
+    # Panel 2: binned regression
     ax2 = fig.add_subplot(gs_fig[0, 1])
 
     sizes = 40 + 120 * (cnt_bins / cnt_bins.max())
@@ -486,7 +468,7 @@ def run_coin_full_analysis():
     ax2.spines["top"].set_visible(False)
     ax2.spines["right"].set_visible(False)
 
-    # ── Panel 3: Model comparison bar chart with bootstrap CIs ───────────────────
+    # Panel 3: model comparison bar chart with bootstrap CIs
     ax3 = fig.add_subplot(gs_fig[0, 2])
 
     COLORS = ["#2563eb", "#16a34a", "#7c3aed", "#dc2626", "#f59e0b"]
@@ -527,7 +509,7 @@ def run_coin_full_analysis():
     ax3.spines["top"].set_visible(False)
     ax3.spines["right"].set_visible(False)
 
-    # ── Suptitle ─────────────────────────────────────────────────────────────────
+    # suptitle
     best_coin_model = min(model_results, key=lambda k: model_results[k]["mae"])
     best_coin_mae = model_results[best_coin_model]["mae"]
     best_coin_r2  = model_results[best_coin_model]["r2"]
@@ -553,9 +535,7 @@ def run_slippage_analysis():
 
     import datetime as dt
 
-    # ---------------------------------------------------------------------------
-    # Load & prep
-    # ---------------------------------------------------------------------------
+    # load & prep
     df = pq.read_table("data/block_trades.parquet").to_pandas()
     df = df.dropna(subset=["slippage_bps"])
 
@@ -595,9 +575,7 @@ def run_slippage_analysis():
     TOD_ORDER = ["Open\n(9:30–10:00)", "Midday\n(10:00–15:30)", "Close\n(15:30–16:00)"]
     DV_ORDER  = labels
 
-    # ---------------------------------------------------------------------------
-    # Summary table
-    # ---------------------------------------------------------------------------
+    # summary table
     def summarise(group):
         s = group["slippage_bps"]
         return pd.Series({
@@ -646,9 +624,7 @@ def run_slippage_analysis():
     pivot_n.columns = [c.replace("\n", " ") for c in pivot_n.columns]
     print(pivot_n.to_string())
 
-    # ---------------------------------------------------------------------------
-    # Plot — 2 rows: by DV bucket (top), by time of day (bottom)
-    # ---------------------------------------------------------------------------
+    # plot: by DV bucket (left), by time of day (right)
     COLORS_DV  = ["#4878d0", "#ee854a", "#6acc65", "#d65f5f"]
     COLORS_TOD = ["#956cb4", "#8c613c", "#dc7ec0"]
 

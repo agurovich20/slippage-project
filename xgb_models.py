@@ -1,11 +1,7 @@
 """
-XGBoost models consolidated.
-
-Functions:
-  run_xgb_lad_analysis()   - SHAP, feature importance, residuals for XGB LAD model
-  run_xgb_mse_analysis()   - SHAP, feature importance, residuals for XGB MSE model
-  run_xgb_mse_nonlinear()  - PDP, ICE, SHAP interactions, non-linearity analysis
-  run_xgb_rf_comparison()  - Side-by-side XGB vs RF comparison (4 figures)
+XGBoost slippage models — SHAP analysis, partial dependence, ICE curves, and a
+side-by-side comparison with Random Forest. LAD and MSE variants treated separately
+since the feature importance structure differs noticeably between them.
 """
 
 import os
@@ -28,7 +24,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.inspection import partial_dependence
 
 
-# =============================================================================
+# =
 def run_xgb_lad_analysis():
     """
     SHAP, feature importance, and residual analytics for XGBoost LAD model.
@@ -39,7 +35,7 @@ def run_xgb_lad_analysis():
 
     Output: aapl_xgb_lad_analysis.png
     """
-    # -- Load data ----------------------------------------------------------------
+    # Load data
     df_tr = pd.read_parquet("data/lit_buy_features_v2.parquet")
     df_te = pd.read_parquet("data/lit_buy_features_v2_sep.parquet")
     df_tr["abs_impact"] = df_tr["impact_vwap_bps"].abs()
@@ -59,7 +55,7 @@ def run_xgb_lad_analysis():
 
     print(f"Train: {len(df_tr):,}  |  Test: {len(df_te):,}")
 
-    # -- Train model --------------------------------------------------------------
+    # Train model
     BEST = dict(max_depth=3, n_estimators=200, learning_rate=0.1,
                 min_child_weight=1, reg_alpha=0, reg_lambda=1.0)
 
@@ -74,7 +70,7 @@ def run_xgb_lad_analysis():
     pred_tr = np.maximum(model.predict(X_tr), 0.0)
     pred_te = np.maximum(model.predict(X_te), 0.0)
 
-    # -- Metrics ------------------------------------------------------------------
+    # Metrics
     def r2(y, yh):
         ss = ((y - yh)**2).sum(); st = ((y - y.mean())**2).sum()
         return 1 - ss/st if st > 0 else np.nan
@@ -83,7 +79,7 @@ def run_xgb_lad_analysis():
         print(f"  {label}: R2={r2(y, pred):+.4f}  MAE={np.mean(np.abs(y - pred)):.4f}  "
               f"RMSE={np.sqrt(np.mean((y - pred)**2)):.4f}")
 
-    # -- SHAP on test set ---------------------------------------------------------
+    # SHAP on test set
     rng = np.random.default_rng(42)
     explainer = shap.TreeExplainer(model, X_tr)
 
@@ -101,7 +97,7 @@ def run_xgb_lad_analysis():
     for feat, ms in sorted(zip(FEATURES, mean_abs_shap), key=lambda x: -x[1]):
         print(f"  {feat:<22} {ms:.5f}")
 
-    # -- XGBoost native importances -----------------------------------------------
+    # XGBoost native importances
     imp_gain = model.get_booster().get_score(importance_type="gain")
     imp_weight = model.get_booster().get_score(importance_type="weight")
     imp_cover = model.get_booster().get_score(importance_type="cover")
@@ -115,11 +111,11 @@ def run_xgb_lad_analysis():
         c = imp_cover.get(key, 0)
         print(f"  {feat:<22} {g:>10.2f} {w:>10.0f} {c:>10.1f}")
 
-    # -- PLOTS --------------------------------------------------------------------
+    # PLOTS
     fig = plt.figure(figsize=(26, 18))
     gs = gridspec.GridSpec(3, 3, figure=fig, wspace=0.35, hspace=0.45)
 
-    # -- Panel 1: SHAP beeswarm ---------------------------------------------------
+    # Panel 1: SHAP beeswarm
     ax1 = fig.add_subplot(gs[0, :2])
     cmap = cm.coolwarm
 
@@ -150,7 +146,7 @@ def run_xgb_lad_analysis():
     cbar.set_ticks([0, 0.5, 1])
     cbar.set_ticklabels(["low", "mid", "high"], fontsize=7.5)
 
-    # -- Panel 2: Mean |SHAP| bar -------------------------------------------------
+    # Panel 2: Mean |SHAP| bar
     ax2 = fig.add_subplot(gs[0, 2])
     bar_order = np.argsort(mean_abs_shap)[::-1]
     bar_colors = plt.cm.Set2(np.linspace(0, 1, len(FEATURES)))
@@ -168,7 +164,7 @@ def run_xgb_lad_analysis():
     ax2.spines["top"].set_visible(False)
     ax2.spines["right"].set_visible(False)
 
-    # -- Panel 3-5: SHAP dependence for top 3 ------------------------------------
+    # Panel 3-5: SHAP dependence for top 3
     top3 = bar_order[:3]
     for k, fi in enumerate(top3):
         ax = fig.add_subplot(gs[1, k])
@@ -188,7 +184,7 @@ def run_xgb_lad_analysis():
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
 
-    # -- Panel 6: Predicted vs Actual ---------------------------------------------
+    # Panel 6: Predicted vs Actual
     ax6 = fig.add_subplot(gs[2, 0])
     clip_v = np.percentile(y_te, 98)
     samp = rng.choice(len(y_te), size=min(5000, len(y_te)), replace=False)
@@ -208,7 +204,7 @@ def run_xgb_lad_analysis():
     ax6.spines["top"].set_visible(False)
     ax6.spines["right"].set_visible(False)
 
-    # -- Panel 7: Residual distribution -------------------------------------------
+    # Panel 7: Residual distribution
     ax7 = fig.add_subplot(gs[2, 1])
     resid = y_te - pred_te
     clip_r = np.percentile(np.abs(resid), 98)
@@ -230,7 +226,7 @@ def run_xgb_lad_analysis():
     ax7.spines["top"].set_visible(False)
     ax7.spines["right"].set_visible(False)
 
-    # -- Panel 8: MAE by decile --------------------------------------------------
+    # Panel 8: MAE by decile
     ax8 = fig.add_subplot(gs[2, 2])
     decile_labels = pd.qcut(pred_te, q=10, labels=False, duplicates="drop")
     n_deciles = len(np.unique(decile_labels))
@@ -267,7 +263,7 @@ def run_xgb_lad_analysis():
     print("\nSaved -> aapl_xgb_lad_analysis.png")
 
 
-# =============================================================================
+# =
 def run_xgb_mse_analysis():
     """
     SHAP, feature importance, and residual analytics for XGBoost MSE model.
@@ -278,7 +274,7 @@ def run_xgb_mse_analysis():
 
     Output: aapl_xgb_mse_analysis.png
     """
-    # ── Load data ────────────────────────────────────────────────────────────────
+    # Load data
     df_tr = pd.read_parquet("data/lit_buy_features_v2.parquet")
     df_te = pd.read_parquet("data/lit_buy_features_v2_sep.parquet")
     df_tr["abs_impact"] = df_tr["impact_vwap_bps"].abs()
@@ -298,7 +294,7 @@ def run_xgb_mse_analysis():
 
     print(f"Train: {len(df_tr):,}  |  Test: {len(df_te):,}")
 
-    # ── Train model ──────────────────────────────────────────────────────────────
+    # Train model
     BEST = dict(max_depth=1, n_estimators=200, learning_rate=0.1,
                 min_child_weight=1, reg_alpha=10.0, reg_lambda=1.0)
 
@@ -313,7 +309,7 @@ def run_xgb_mse_analysis():
     pred_tr = np.maximum(model.predict(X_tr), 0.0)
     pred_te = np.maximum(model.predict(X_te), 0.0)
 
-    # ── Metrics ──────────────────────────────────────────────────────────────────
+    # Metrics
     def r2(y, yh):
         ss = ((y - yh)**2).sum(); st = ((y - y.mean())**2).sum()
         return 1 - ss/st if st > 0 else np.nan
@@ -322,7 +318,7 @@ def run_xgb_mse_analysis():
         print(f"  {label}: R2={r2(y,pred):+.4f}  MAE={np.mean(np.abs(y-pred)):.4f}  "
               f"RMSE={np.sqrt(np.mean((y-pred)**2)):.4f}")
 
-    # ── SHAP on test set ─────────────────────────────────────────────────────────
+    # SHAP on test set
     explainer = shap.TreeExplainer(model, X_tr)
 
     # Use a subsample for SHAP on test (faster, still representative)
@@ -341,7 +337,7 @@ def run_xgb_mse_analysis():
     for feat, ms in sorted(zip(FEATURES, mean_abs_shap), key=lambda x: -x[1]):
         print(f"  {feat:<22} {ms:.5f}")
 
-    # ── XGBoost native importances ───────────────────────────────────────────────
+    # XGBoost native importances
     imp_gain = model.get_booster().get_score(importance_type="gain")
     imp_weight = model.get_booster().get_score(importance_type="weight")
     imp_cover = model.get_booster().get_score(importance_type="cover")
@@ -355,11 +351,11 @@ def run_xgb_mse_analysis():
         c = imp_cover.get(key, 0)
         print(f"  {feat:<22} {g:>10.2f} {w:>10.0f} {c:>10.1f}")
 
-    # ── PLOTS ────────────────────────────────────────────────────────────────────
+    # PLOTS
     fig = plt.figure(figsize=(26, 18))
     gs = gridspec.GridSpec(3, 3, figure=fig, wspace=0.35, hspace=0.45)
 
-    # ── Panel 1: SHAP beeswarm ──────────────────────────────────────────────────
+    # Panel 1: SHAP beeswarm
     ax1 = fig.add_subplot(gs[0, :2])
     cmap = cm.coolwarm
 
@@ -390,7 +386,7 @@ def run_xgb_mse_analysis():
     cbar.set_ticks([0, 0.5, 1])
     cbar.set_ticklabels(["low", "mid", "high"], fontsize=7.5)
 
-    # ── Panel 2: Mean |SHAP| bar ────────────────────────────────────────────────
+    # Panel 2: Mean |SHAP| bar
     ax2 = fig.add_subplot(gs[0, 2])
     bar_order = np.argsort(mean_abs_shap)[::-1]
     bar_colors = plt.cm.Set2(np.linspace(0, 1, len(FEATURES)))
@@ -408,7 +404,7 @@ def run_xgb_mse_analysis():
     ax2.spines["top"].set_visible(False)
     ax2.spines["right"].set_visible(False)
 
-    # ── Panel 3-5: SHAP dependence plots for top 3 features ─────────────────────
+    # Panel 3-5: SHAP dependence plots for top 3 features
     top3 = bar_order[:3]
     dep_colors = ["#2563eb", "#16a34a", "#dc2626"]
 
@@ -431,7 +427,7 @@ def run_xgb_mse_analysis():
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
 
-    # ── Panel 6: Predicted vs Actual scatter ─────────────────────────────────────
+    # Panel 6: Predicted vs Actual scatter
     ax6 = fig.add_subplot(gs[2, 0])
     clip_v = np.percentile(y_te, 98)
     samp = rng.choice(len(y_te), size=min(5000, len(y_te)), replace=False)
@@ -451,7 +447,7 @@ def run_xgb_mse_analysis():
     ax6.spines["top"].set_visible(False)
     ax6.spines["right"].set_visible(False)
 
-    # ── Panel 7: Residual distribution ───────────────────────────────────────────
+    # Panel 7: Residual distribution
     ax7 = fig.add_subplot(gs[2, 1])
     resid = y_te - pred_te
     clip_r = np.percentile(np.abs(resid), 98)
@@ -473,7 +469,7 @@ def run_xgb_mse_analysis():
     ax7.spines["top"].set_visible(False)
     ax7.spines["right"].set_visible(False)
 
-    # ── Panel 8: MAE by decile of predicted value ────────────────────────────────
+    # Panel 8: MAE by decile of predicted value
     ax8 = fig.add_subplot(gs[2, 2])
     decile_labels = pd.qcut(pred_te, q=10, labels=False, duplicates="drop")
     n_deciles = len(np.unique(decile_labels))
@@ -512,7 +508,7 @@ def run_xgb_mse_analysis():
     print("\nSaved -> aapl_xgb_mse_analysis.png")
 
 
-# =============================================================================
+# =
 def run_xgb_mse_nonlinear():
     """
     Non-linearity analysis for XGBoost MSE model (6 features, depth=1).
@@ -524,7 +520,7 @@ def run_xgb_mse_nonlinear():
 
     Output: aapl_xgb_mse_nonlinear.png
     """
-    # ── Load & train ─────────────────────────────────────────────────────────────
+    # Load & train
     df_tr = pd.read_parquet("data/lit_buy_features_v2.parquet")
     df_te = pd.read_parquet("data/lit_buy_features_v2_sep.parquet")
     df_tr["abs_impact"] = df_tr["impact_vwap_bps"].abs()
@@ -553,7 +549,7 @@ def run_xgb_mse_nonlinear():
     pred_te = np.maximum(model.predict(X_te), 0.0)
     resid = y_te - pred_te
 
-    # ── SHAP interaction values (on subsample) ───────────────────────────────────
+    # SHAP interaction values (on subsample)
     rng = np.random.default_rng(42)
     n_shap = 1500
     shap_idx = rng.choice(len(X_te), size=n_shap, replace=False)
@@ -574,11 +570,11 @@ def run_xgb_mse_nonlinear():
         row = "  ".join(f"{mean_interact[i, j]:>8.4f}" for j in range(len(FEATURES)))
         print(f"  {feat:<20} {row}")
 
-    # ── Active features (skip log_dollar_value which has 0 importance) ───────────
+    # Active features (skip log_dollar_value which has 0 importance)
     ACTIVE = [0, 2, 3, 4, 5]  # indices of active features
     ACTIVE_NAMES = [FEATURES[i] for i in ACTIVE]
 
-    # ── PDP helper ───────────────────────────────────────────────────────────────
+    # PDP helper
     def compute_pdp(model, X_background, feat_idx, grid_n=200):
         """1D partial dependence: average prediction over background while sweeping feat_idx."""
         feat_vals = X_background[:, feat_idx]
@@ -593,7 +589,7 @@ def run_xgb_mse_nonlinear():
             pdp_vals[gi] = np.maximum(model.predict(X_mod), 0.0).mean()
         return grid, pdp_vals
 
-    # ── ICE helper ───────────────────────────────────────────────────────────────
+    # ICE helper
     def compute_ice(model, X_instances, feat_idx, grid_n=200):
         """ICE curves for a set of instances."""
         feat_vals = X_instances[:, feat_idx]
@@ -605,7 +601,7 @@ def run_xgb_mse_nonlinear():
             ice[:, gi] = np.maximum(model.predict(X_mod), 0.0)
         return grid, ice
 
-    # ── OLS residual test (check for non-linear residual patterns) ───────────────
+    # OLS residual test (check for non-linear residual patterns)
     print("\nNon-linearity test: OLS residual vs feature, then fit quadratic")
     print(f"  {'Feature':<22} {'Lin coef':>10} {'Quad coef':>10} {'Quad R2 gain':>13}")
     for fi in ACTIVE:
@@ -623,11 +619,11 @@ def run_xgb_mse_nonlinear():
         r2_quad = 1 - ss_quad / ss_tot
         print(f"  {FEATURES[fi]:<22} {c_lin[0]:>+10.5f} {c_quad[0]:>+10.5f} {r2_quad - r2_lin:>+13.6f}")
 
-    # ── PLOT ─────────────────────────────────────────────────────────────────────
+    # PLOT
     fig = plt.figure(figsize=(28, 20))
     gs_fig = gridspec.GridSpec(3, 5, figure=fig, wspace=0.38, hspace=0.45)
 
-    # ── Row 0: PDP for 5 active features ────────────────────────────────────────
+    # Row 0: PDP for 5 active features
     pdp_colors = ["#2563eb", "#16a34a", "#dc2626", "#7c3aed", "#f59e0b"]
     for k, fi in enumerate(ACTIVE):
         ax = fig.add_subplot(gs_fig[0, k])
@@ -649,7 +645,7 @@ def run_xgb_mse_nonlinear():
         # Clip x
         ax.set_xlim(np.percentile(X_te[:, fi], 1), np.percentile(X_te[:, fi], 99))
 
-    # ── Row 1: ICE for top 3 features + interaction heatmap + residual Q-Q ──────
+    # Row 1: ICE for top 3 features + interaction heatmap + residual Q-Q
     top3_fi = [4, 2, 0]  # vol, prate, dollar_value (by SHAP importance)
     ice_colors = ["#7c3aed", "#16a34a", "#2563eb"]
 
@@ -675,7 +671,7 @@ def run_xgb_mse_nonlinear():
         ax.spines["right"].set_visible(False)
         ax.set_xlim(grid[0], grid[-1])
 
-    # ── Panel: SHAP interaction heatmap ──────────────────────────────────────────
+    # Panel: SHAP interaction heatmap
     ax_heat = fig.add_subplot(gs_fig[1, 3:])
 
     # Only show active features in heatmap
@@ -700,7 +696,7 @@ def run_xgb_mse_nonlinear():
     ax_heat.set_title("SHAP interaction matrix\n(off-diagonal = pairwise interactions)",
                       fontsize=10, fontweight="bold")
 
-    # ── Row 2: Residual vs each active feature ──────────────────────────────────
+    # Row 2: Residual vs each active feature
     for k, fi in enumerate(ACTIVE):
         ax = fig.add_subplot(gs_fig[2, k])
         samp = rng.choice(len(X_te), size=min(3000, len(X_te)), replace=False)
@@ -752,7 +748,7 @@ def run_xgb_mse_nonlinear():
     print("\nSaved -> aapl_xgb_mse_nonlinear.png")
 
 
-# =============================================================================
+# =
 def run_xgb_rf_comparison():
     """
     Side-by-side comparison of XGBoost and Random Forest fits (LAD and MSE variants).
@@ -763,7 +759,7 @@ def run_xgb_rf_comparison():
       3. xgb_rf_partial_dep.png      - Partial dependence for top 3 features
       4. xgb_rf_model_summary.png    - Bar chart comparison of metrics + importance heatmap
     """
-    # -- Load data ----------------------------------------------------------------
+    # Load data
     df_tr = pd.read_parquet("data/lit_buy_features_v2.parquet")
     df_te = pd.read_parquet("data/lit_buy_features_v2_sep.parquet")
     df_tr["abs_impact"] = df_tr["impact_vwap_bps"].abs()
@@ -790,7 +786,7 @@ def run_xgb_rf_comparison():
 
     print(f"Train: {len(df_tr):,}  |  Test: {len(df_te):,}")
 
-    # -- Metrics helper -----------------------------------------------------------
+    # Metrics helper
     def r2(y, yh):
         ss = ((y - yh)**2).sum(); st = ((y - y.mean())**2).sum()
         return 1 - ss/st if st > 0 else np.nan
@@ -804,7 +800,7 @@ def run_xgb_rf_comparison():
     def median_ae(y, yh):
         return np.median(np.abs(y - yh))
 
-    # -- Train all 4 models -------------------------------------------------------
+    # Train all 4 models
     models = {}
 
     # XGBoost LAD
@@ -862,9 +858,7 @@ def run_xgb_rf_comparison():
 
     rng = np.random.default_rng(42)
 
-    # =============================================================================
     # Figure 1: Predicted vs Actual (2x2)
-    # =============================================================================
     fig1, axes1 = plt.subplots(2, 2, figsize=(16, 14))
     clip_v = np.percentile(y_te, 98)
     samp = rng.choice(len(y_te), size=min(5000, len(y_te)), replace=False)
@@ -914,9 +908,7 @@ def run_xgb_rf_comparison():
     fig1.savefig("xgb_rf_pred_vs_actual.png", dpi=150, bbox_inches="tight")
     print("\nSaved -> xgb_rf_pred_vs_actual.png")
 
-    # =============================================================================
     # Figure 2: Residual Analysis (2x2 grid: histogram + QQ per model pair)
-    # =============================================================================
     fig2 = plt.figure(figsize=(20, 16))
     gs2 = gridspec.GridSpec(2, 2, figure=fig2, hspace=0.38, wspace=0.30)
 
@@ -971,9 +963,7 @@ def run_xgb_rf_comparison():
     fig2.savefig("xgb_rf_residuals.png", dpi=150, bbox_inches="tight")
     print("Saved -> xgb_rf_residuals.png")
 
-    # =============================================================================
     # Figure 3: Partial Dependence Comparison (top 3 features, all 4 models)
-    # =============================================================================
     top_features = ["roll_spread_500", "participation_rate", "log_dollar_value"]
     top_idx = [FEATURES.index(f) for f in top_features]
 
@@ -1021,16 +1011,14 @@ def run_xgb_rf_comparison():
     fig3.savefig("xgb_rf_partial_dep.png", dpi=150, bbox_inches="tight")
     print("Saved -> xgb_rf_partial_dep.png")
 
-    # =============================================================================
     # Figure 4: Model Summary Dashboard
-    # =============================================================================
     fig4 = plt.figure(figsize=(22, 14))
     gs4 = gridspec.GridSpec(2, 3, figure=fig4, hspace=0.40, wspace=0.35)
 
     model_names = list(models.keys())
     model_colors = [models[n]["color"] for n in model_names]
 
-    # -- Panel 1: OOS MAE comparison bar chart ------------------------------------
+    # Panel 1: OOS MAE comparison bar chart
     ax_mae = fig4.add_subplot(gs4[0, 0])
     mae_vals = [models[n]["mae_te"] for n in model_names]
     bars = ax_mae.bar(range(4), mae_vals, color=model_colors,
@@ -1046,7 +1034,7 @@ def run_xgb_rf_comparison():
     ax_mae.spines["top"].set_visible(False)
     ax_mae.spines["right"].set_visible(False)
 
-    # -- Panel 2: OOS RMSE comparison bar chart -----------------------------------
+    # Panel 2: OOS RMSE comparison bar chart
     ax_rmse = fig4.add_subplot(gs4[0, 1])
     rmse_vals = [models[n]["rmse_te"] for n in model_names]
     bars = ax_rmse.bar(range(4), rmse_vals, color=model_colors,
@@ -1062,7 +1050,7 @@ def run_xgb_rf_comparison():
     ax_rmse.spines["top"].set_visible(False)
     ax_rmse.spines["right"].set_visible(False)
 
-    # -- Panel 3: OOS R2 comparison bar chart -------------------------------------
+    # Panel 3: OOS R2 comparison bar chart
     ax_r2 = fig4.add_subplot(gs4[0, 2])
     r2_vals = [models[n]["r2_te"] for n in model_names]
     bars = ax_r2.bar(range(4), r2_vals, color=model_colors,
@@ -1078,7 +1066,7 @@ def run_xgb_rf_comparison():
     ax_r2.spines["top"].set_visible(False)
     ax_r2.spines["right"].set_visible(False)
 
-    # -- Panel 4: Residual QQ plot overlay ----------------------------------------
+    # Panel 4: Residual QQ plot overlay
     ax_qq = fig4.add_subplot(gs4[1, 0])
     for name, info in models.items():
         resid = info["resid_te"]
@@ -1100,7 +1088,7 @@ def run_xgb_rf_comparison():
     ax_qq.spines["top"].set_visible(False)
     ax_qq.spines["right"].set_visible(False)
 
-    # -- Panel 5: MAE by actual-value quintile (calibration check) ----------------
+    # Panel 5: MAE by actual-value quintile (calibration check)
     ax_cal = fig4.add_subplot(gs4[1, 1])
     n_bins = 8
     bin_edges = np.percentile(y_te, np.linspace(0, 100, n_bins + 1))
@@ -1130,7 +1118,7 @@ def run_xgb_rf_comparison():
     ax_cal.spines["top"].set_visible(False)
     ax_cal.spines["right"].set_visible(False)
 
-    # -- Panel 6: Feature importance heatmap (sklearn-style) ----------------------
+    # Panel 6: Feature importance heatmap (sklearn-style)
     ax_imp = fig4.add_subplot(gs4[1, 2])
 
     imp_matrix = np.zeros((len(model_names), len(FEATURES)))
@@ -1176,7 +1164,7 @@ def run_xgb_rf_comparison():
     print("\nAll visualizations complete!")
 
 
-# =============================================================================
+# =
 if __name__ == "__main__":
     run_xgb_lad_analysis()
     run_xgb_mse_analysis()

@@ -22,6 +22,9 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
+# Output figures (keep locally, not in repo)
+*.png
+
 # Article drafts
 medium_article*.md
 medium_article_v*.md
