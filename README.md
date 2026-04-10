@@ -15,9 +15,9 @@ placeholder
 .
 ├── pipeline.py          # Data fetching (Polygon.io), block trade identification,
 │                        # cross-stock validation pipeline, summary figures
-├── build_features.py    # Feature construction — 500-trade rolling Roll spread and vol
-├── eda.py               # Exploratory analysis: distributions, impact by size/regime,
-│                        # sweep clusters, buy/sell classification
+├── build_features.py    # Feature construction: 500-trade rolling Roll spread and vol, etc.
+├── eda.py               # Exploratory analysis: distributions, slippage by size/regime,
+│                        # sweep clusters, etc.
 ├── ols_baseline.py      # OLS baselines, residual diagnostics, temporal holdout
 ├── gridsearch.py        # Hyperparameter search for XGBoost and RF (MSE and LAD)
 ├── xgb_models.py        # XGBoost SHAP analysis, PDPs, ICE curves, RF comparison
